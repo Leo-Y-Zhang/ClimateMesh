@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Runtime database (regenerated on every run)
+data/climate_mesh.db
+data/climate_mesh.db-wal
+data/climate_mesh.db-shm
+data/demo_control.json
+
+# Generated evidence exports
+evidence/
+
+# Cached Open-Meteo historical archive training data (offline-friendly repeat runs)
+ai/_archive_cache.json
+
+# Vernier GDX helper module (downloaded by setup_pi.sh on the Pi)
+/gdx/
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets / credentials (defensive - none should ever exist here)
+.env
+.env.*
+*.pem
+*.key

@@ -1,0 +1,7 @@
+{
+    "_comment": "Optional hardware configuration. Only used in --mode hardware/auto when a physical Vernier sensor is connected. The mesh runs fully without this.",
+    "hardware_node_id": "CENTRAL-LDN",
+    "gdx_connection": "usb",
+    "ads1115_channel": 0,
+    "poll_interval_seconds": 2
+}

@@ -1,0 +1,8 @@
+# Normalise line endings so the repo is LF everywhere. This matters most for
+# setup_pi.sh — a CRLF shebang would break it on the Raspberry Pi.
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.ini text eol=lf
