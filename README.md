@@ -190,7 +190,7 @@ Then open the local Streamlit URL it prints (usually <http://localhost:8501>).
 ```bash
 sudo apt update
 sudo apt install -y git python3-venv python3-pip
-git clone https://github.com/GreenPandaTech/ClimateMesh.git
+git clone https://github.com/Leo-Y-Zhang/ClimateMesh.git
 cd ClimateMesh
 
 # One-command setup (creates .venv, installs deps, runs smoke test)
