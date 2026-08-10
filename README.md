@@ -46,7 +46,7 @@ not field measurements; no physical sensor has been validated yet)*:
 > **simulated** and/or **live API** data. Every reading shows its source
 > (`simulation` / `demo` / `api` / `hardware`) so nothing is ever overstated.
 
-Built by **Leo and Luis** for the PA Raspberry Pi
+Built by **two sixth-form students** for the PA Raspberry Pi
 Competition 2026 — theme *Building a Positive Human Future* (Safer Societies &
 Sustainable World).
 
@@ -464,7 +464,7 @@ sections above with evidence:
 
 ## Credits
 
-Built by **Leo and Luis** — two sixth-form students.
+Built by **two sixth-form students**.
 
 ## Licence
 
