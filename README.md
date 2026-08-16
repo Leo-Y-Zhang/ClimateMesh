@@ -32,7 +32,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **91/91 automated tests pass**; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **94/94 automated tests pass**; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
 - The 30-second demo tour (`python scripts/demo_tour.py`) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -440,7 +440,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (91 tests)
+pytest                               # the full unit-test suite (94 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

@@ -92,16 +92,26 @@ class ApiAdapter(SensorAdapter):
         # coordinates are requested; normalise to a list either way.
         weather_list = weather if isinstance(weather, list) else [weather]
         air_list = air if isinstance(air, list) else [air]
+        if not weather_list or not air_list:
+            raise ApiUnavailable("live response contained no locations")
 
         readings = []
         for idx, node in enumerate(NODES):
             w = weather_list[idx] if idx < len(weather_list) else weather_list[-1]
             a = air_list[idx] if idx < len(air_list) else air_list[-1]
             cur = w.get("current", {})
-            temp = cur.get("temperature_2m", 15.0)
-            humidity = cur.get("relative_humidity_2m", 70.0)
-            wind = cur.get("wind_speed_10m", 4.0)
-            pressure = cur.get("pressure_msl", 1013.0)
+            # A live reading must come from the response. A placeholder here
+            # would be stamped source="api" and shown behind a "Live API"
+            # badge, so a payload without usable values is reported as
+            # unavailable and the caller falls back to labelled simulation.
+            temp = cur.get("temperature_2m")
+            humidity = cur.get("relative_humidity_2m")
+            wind = cur.get("wind_speed_10m")
+            pressure = cur.get("pressure_msl")
+            if temp is None or humidity is None or wind is None or pressure is None:
+                raise ApiUnavailable(
+                    f"live response has no usable current values for "
+                    f"{node['node_id']}")
             apparent = cur.get("apparent_temperature", temp)
 
             precip = 0.0

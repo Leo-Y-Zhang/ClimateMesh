@@ -8,8 +8,10 @@ database preserves whatever source/quality a reading was created with.
 
 from __future__ import annotations
 
+import pytest
+
 from data.database import get_latest_readings_per_node, insert_reading
-from sensors import create_adapter
+from sensors import api_adapter, create_adapter
 from sensors.api_adapter import ApiAdapter, ApiUnavailable
 from sensors.simulated_adapter import SimulatedAdapter
 from sensors.vernier_adapter import VernierAdapter
@@ -75,6 +77,46 @@ def test_api_fallback_is_never_labelled_api(monkeypatch):
     assert adapter.source == "simulation"
     assert isinstance(adapter, SimulatedAdapter)
     assert any("fell back" in n.lower() or "simulation" in n.lower() for n in notes)
+
+
+def test_api_response_without_live_values_is_not_labelled_api(monkeypatch):
+    # A 200 response that carries no "current" block has no live measurement in
+    # it. The adapter must say so, not fill the gap with placeholder numbers and
+    # stamp them source="api" — that is exactly the "silently invents data and
+    # calls it live" failure the module docstring rules out.
+    monkeypatch.setattr(
+        api_adapter, "_http_get_json",
+        lambda url, params, timeout=8.0: [{"latitude": 51.5, "longitude": -0.12}] * 20)
+    with pytest.raises(ApiUnavailable):
+        ApiAdapter().read_all()
+
+
+def test_api_null_measurements_fall_back_instead_of_crashing(monkeypatch):
+    # Open-Meteo can return a "current" block whose values are null. That must
+    # surface as ApiUnavailable so create_adapter() falls back to labelled
+    # simulation; any other exception escapes the fallback and kills the run.
+    monkeypatch.setattr(
+        api_adapter, "_http_get_json",
+        lambda url, params, timeout=8.0: [{"current": {
+            "temperature_2m": None, "relative_humidity_2m": None,
+            "wind_speed_10m": None, "pressure_msl": None,
+            "apparent_temperature": None}}] * 20)
+    with pytest.raises(ApiUnavailable):
+        ApiAdapter().read_all()
+
+    adapter, notes = create_adapter("api")
+    assert adapter.source == "simulation"
+    assert isinstance(adapter, SimulatedAdapter)
+    assert any("fell back" in n.lower() for n in notes)
+
+
+def test_api_empty_location_list_falls_back_instead_of_crashing(monkeypatch):
+    # An empty list of locations leaves nothing to read from; indexing it must
+    # not raise IndexError past the ApiUnavailable fallback.
+    monkeypatch.setattr(api_adapter, "_http_get_json",
+                        lambda url, params, timeout=8.0: [])
+    with pytest.raises(ApiUnavailable):
+        ApiAdapter().read_all()
 
 
 def test_database_preserves_source_and_quality():
