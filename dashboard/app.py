@@ -50,14 +50,17 @@ def _write_scenario(scenario: str) -> None:
 def _active_scenario() -> str:
     """Read the active scenario from the control file, or fall back to normal.
 
-    Only a name we actually know is honoured, so a stale or hand-edited control
-    file cannot put an unknown scenario in front of the picker.
+    Only an object whose "scenario" names something we actually know is
+    honoured, so a stale or hand-edited control file cannot put an unknown
+    scenario in front of the picker, or crash the tab that reads it.
     """
     try:
         if DEMO_CONTROL_PATH.exists():
-            scenario = json.loads(DEMO_CONTROL_PATH.read_text()).get("scenario")
-            if scenario in SCENARIOS:
-                return scenario
+            control = json.loads(DEMO_CONTROL_PATH.read_text())
+            if isinstance(control, dict):
+                scenario = control.get("scenario")
+                if isinstance(scenario, str) and scenario in SCENARIOS:
+                    return scenario
     except (json.JSONDecodeError, OSError):
         pass
     return "normal"

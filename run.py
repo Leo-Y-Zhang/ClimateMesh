@@ -78,15 +78,17 @@ def _write_scenario(scenario: str) -> None:
 def _read_scenario(default: str) -> str:
     """Read the active scenario from the control file, or return the default.
 
-    The dashboard writes this file, so the value is only honoured when it names
-    a scenario we actually know; anything else falls back rather than reaching
-    the simulation engine.
+    The dashboard writes this file, so the value is only honoured when the file
+    holds an object whose "scenario" names a scenario we actually know. Any
+    other shape falls back rather than reaching the simulation engine.
     """
     try:
         if DEMO_CONTROL_PATH.exists():
-            scenario = json.loads(DEMO_CONTROL_PATH.read_text()).get("scenario")
-            if scenario in SCENARIOS:
-                return scenario
+            control = json.loads(DEMO_CONTROL_PATH.read_text())
+            if isinstance(control, dict):
+                scenario = control.get("scenario")
+                if isinstance(scenario, str) and scenario in SCENARIOS:
+                    return scenario
     except (json.JSONDecodeError, OSError):
         pass
     return default

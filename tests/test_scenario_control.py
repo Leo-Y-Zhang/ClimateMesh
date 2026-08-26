@@ -31,6 +31,17 @@ _REJECTED = [
     pytest.param(None, id="null"),
 ]
 
+# JSON that parses cleanly but whose top level is not an object, so there is no
+# "scenario" key to look up at all. These are as unusable as a malformed file
+# and must fall back the same way rather than crash the reader.
+_NON_OBJECT_JSON = [
+    pytest.param("5", id="bare-number"),
+    pytest.param('"flood"', id="bare-string-naming-a-scenario"),
+    pytest.param("null", id="bare-null"),
+    pytest.param("[1, 2]", id="bare-list"),
+    pytest.param("true", id="bare-bool"),
+]
+
 
 @pytest.fixture
 def control_file(tmp_path, monkeypatch):
@@ -69,6 +80,18 @@ def test_missing_control_file_uses_the_default(control_file):
 
 def test_malformed_control_file_uses_the_default(control_file):
     control_file.write_text("{not json at all")
+    assert run._read_scenario("smog") == "smog"
+    assert dashboard_app._active_scenario() == "normal"
+
+
+@pytest.mark.parametrize("raw", _NON_OBJECT_JSON)
+def test_non_object_control_file_uses_the_default(control_file, raw):
+    # Valid JSON, but not the {"scenario": ...} object the writers produce.
+    # Looking up a key on it used to raise AttributeError straight out of the
+    # reader; it must fall back exactly like a malformed file instead. The bare
+    # string case matters most: naming a real scenario at the top level still
+    # does not satisfy the contract.
+    control_file.write_text(raw)
     assert run._read_scenario("smog") == "smog"
     assert dashboard_app._active_scenario() == "normal"
 

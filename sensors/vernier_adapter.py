@@ -43,12 +43,22 @@ CONFIG_PATH = Path(__file__).parent.parent / "data" / "sensor_config.json"
 
 
 def _configured_node(default: str) -> str:
-    """Read the hardware node id from sensor_config.json if present."""
+    """Read the hardware node id from sensor_config.json if present.
+
+    Only an object whose "hardware_node_id" names a node in the mesh is
+    honoured. This runs inside ``VernierAdapter.__init__``, so any other shape
+    has to fall back to the default rather than raise: an exception here takes
+    down ``--mode hardware`` itself, not just the config lookup.
+    """
     try:
         if CONFIG_PATH.exists():
-            node = json.loads(CONFIG_PATH.read_text()).get("hardware_node_id")
-            if node in NODES_BY_ID:
-                return node
+            config = json.loads(CONFIG_PATH.read_text())
+            if isinstance(config, dict):
+                node = config.get("hardware_node_id")
+                # NODES_BY_ID is a dict, so an unhashable value here would
+                # raise TypeError out of the membership test, not simply miss.
+                if isinstance(node, str) and node in NODES_BY_ID:
+                    return node
     except (json.JSONDecodeError, OSError):
         pass
     return default
