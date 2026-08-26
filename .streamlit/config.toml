@@ -1,0 +1,23 @@
+# Climate Mesh - Streamlit runtime configuration.
+
+[server]
+# The dashboard is an unauthenticated read-only view of the local SQLite
+# database, so it listens on the loopback interface only and is never published
+# to the LAN. To see it from another machine, forward the port over SSH:
+#     ssh -L 8501:localhost:8501 pi@<host>
+# then open http://localhost:8501 on that machine.
+address = "127.0.0.1"
+# Do not try to open a browser on the host - a headless Raspberry Pi has none.
+headless = true
+
+[client]
+# Show a generic error message in the browser; exception types, messages and
+# tracebacks go to the console log instead.
+#
+# "none" is deliberate and `false` would be wrong here. From streamlit 1.41 this
+# option is a string, and `false` is only the legacy spelling of "stacktrace",
+# which still sends the traceback to the browser (see the show_trace branch in
+# streamlit/elements/exception.py). Before 1.41 the option was a bool and any
+# string is truthy, which would show FULL details - so this line needs the
+# streamlit >= 1.41 floor that requirements.txt pins.
+showErrorDetails = "none"

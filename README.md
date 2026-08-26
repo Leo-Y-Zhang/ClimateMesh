@@ -32,7 +32,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **94/94 automated tests pass**; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **119/119 automated tests pass**; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
 - The 30-second demo tour (`python scripts/demo_tour.py`) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -202,6 +202,15 @@ required — the demo runs on simulation. To connect a real Vernier Go Direct
 Weather sensor later, follow [docs/hardware_driver_setup.md](docs/hardware_driver_setup.md)
 (it covers the exact `godirect` + `gdx` install and a "sensor not detected"
 troubleshooting guide).
+
+The dashboard has no login, so it listens on `127.0.0.1` only and is never put
+on the LAN. To watch it from a laptop, forward the port over SSH:
+
+```bash
+ssh -L 8501:localhost:8501 pi@<host>
+```
+
+then open <http://localhost:8501> on the laptop.
 
 ## Run commands
 
@@ -440,7 +449,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (94 tests)
+pytest                               # the full unit-test suite (119 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

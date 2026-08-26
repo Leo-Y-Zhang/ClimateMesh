@@ -48,9 +48,16 @@ def _write_scenario(scenario: str) -> None:
 
 
 def _active_scenario() -> str:
+    """Read the active scenario from the control file, or fall back to normal.
+
+    Only a name we actually know is honoured, so a stale or hand-edited control
+    file cannot put an unknown scenario in front of the picker.
+    """
     try:
         if DEMO_CONTROL_PATH.exists():
-            return json.loads(DEMO_CONTROL_PATH.read_text()).get("scenario") or "normal"
+            scenario = json.loads(DEMO_CONTROL_PATH.read_text()).get("scenario")
+            if scenario in SCENARIOS:
+                return scenario
     except (json.JSONDecodeError, OSError):
         pass
     return "normal"
@@ -385,8 +392,11 @@ with tabs[5]:
     else:
         st.warning("No physical sensor detected — fallback simulation active. "
                    "The full pipeline still runs.")
+    # "platform" is deliberately not shown: the full host platform string (OS
+    # build, kernel, libc) is of no use to a judge and is host detail the
+    # dashboard has no reason to publish. looks_like_raspberry_pi answers the
+    # only question this panel actually asks.
     st.json({
-        "platform": status["platform"],
         "looks_like_raspberry_pi": status["looks_like_raspberry_pi"],
         "vernier_weather_library": status["gdx_weather_available"],
         "adc_air_quality_library": status["adc_air_quality_available"],
