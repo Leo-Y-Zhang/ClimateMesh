@@ -158,8 +158,20 @@ Vernier Go Direct Weather sensor is connected over USB, that node switches to
 
 ## Quick start (any computer)
 
+**Prerequisites:** Python **3.13** (what CI runs, and the only version the suite
+is verified on) and `git`. Nothing else — no compiler, database, solver, cloud
+account or API key. Every requirement publishes a prebuilt wheel for Linux,
+Windows and macOS, so the install needs no build toolchain, and the demo runs
+entirely offline. The pinned dependency set also resolves on Python 3.9–3.12
+and nothing in the tree uses syntax newer than 3.8, so an older interpreter
+will very likely work; it is just not tested here. The download is dominated
+by scikit-learn, pandas and numpy.
+
 ```bash
-python3 -m venv .venv
+git clone https://github.com/Leo-Y-Zhang/ClimateMesh.git
+cd ClimateMesh
+
+python3 -m venv .venv              # Windows: py -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -167,6 +179,13 @@ pip install -r requirements.txt
 # Sanity check (no sensors / no internet needed)
 python scripts/smoke_test.py
 pytest
+```
+
+`pytest` is installed by `requirements.txt` — there is no separate dev-extras
+step. One command runs everything a reviewer needs:
+
+```bash
+python scripts/judge_validate.py   # smoke test + all 144 tests + 2 demo cycles + export
 ```
 
 **One-click (Windows):** double-click **`start.bat`** — it installs deps, starts the
