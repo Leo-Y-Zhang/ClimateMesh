@@ -22,12 +22,11 @@ substantial coverage (4.05 versus 0.71 deaths per 100,000 people; WMO/UNDRR,
 *Global Status of Multi-Hazard Early Warning Systems*, 2023). There is a gap
 between where climate events happen and where they are measured.
 
-> ► **One or two sentences in your own words: the real reason you picked
-> this.** The underpass that floods on the way to school, the exam week in a
-> heatwave, a relative in a flat with no cooling, or simply the moment you
-> noticed the nearest official gauge was miles away. Do not invent one; if
-> there is no such moment, say what made you curious or angry when you read
-> about early warnings.
+We picked this because it is the rare climate problem two students can
+actually build something about. Reading about early-warning systems, what
+struck us was that the hard part is not the science but the last mile: the
+forecast exists, and nobody is watching the particular street. A watcher for
+one street is software and an £85 computer, which is exactly what we had.
 
 We wanted a low-cost way for a school or a community to watch its own streets,
 and to be told in plain English what to do.

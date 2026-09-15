@@ -12,6 +12,19 @@ write-up's figure links resolve:
 Landscape orientation, good light, phone camera is fine. Keep each file under
 about 3 MB (resize to roughly 2000 px wide if needed).
 
-Then change the pictures inside `WRITEUP.docx` as well (right-click the
-Figure 1 placeholder → Change Picture; insert `photo-2-team.jpg` in §9).
-Copying files into this folder only updates the Markdown version.
+One command does all of this for you, from the phone files, wherever they
+are:
+
+```bash
+python SUBMISSION_PACK/_build/add_photos.py --pi PI.jpg --team TEAM.jpg
+```
+
+It strips each photo's metadata (phone cameras embed GPS coordinates, the
+device name and a date), resizes it, saves it here under the right name,
+writes the real caption into the write-up and rebuilds `WRITEUP.docx` and
+`WRITEUP.pdf`. Either photo can be given on its own.
+
+By hand instead: copy the files here under the names above, then change the
+pictures inside `WRITEUP.docx` too (right-click the Figure 1 placeholder →
+Change Picture; insert `photo-2-team.jpg` in §9). Copying files into this
+folder only updates the Markdown version.

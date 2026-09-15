@@ -23,25 +23,32 @@ The full set of dashboard screenshots and terminal evidence is in
 
 ## Before submitting: the ► boxes
 
-The write-up contains three marked places (►) that only the team can complete
-truthfully. Search the Word file for "►".
+The write-up contains two marked places (►), both of them photographs only
+the team can take. Search the Word file for "►".
 
-1. **Replace the placeholder photo inside WRITEUP.docx.** Figure 1 is
-   currently a grey "PHOTO 1 GOES HERE" box. Open `WRITEUP.docx`, right-click
-   the Figure 1 image → *Change Picture* → choose the real photo of the Pi,
-   then replace the caption with "Figure 1 — The Raspberry Pi 5 running
-   Climate Mesh." Copying the photo into `photos/` only fixes the Markdown
-   version. Do not submit while the grey box is there.
-2. **§1, the personal reason** for choosing this project (one or two
-   sentences, in the students' words).
-3. **§9, Figure 6**: replace the grey placeholder with the real team photo
-   (save it as `photos/photo-2-team.jpg`, which is currently the same grey
-   box) inside the Word file, as for Figure 1.
+1. **The two photos.** Figures 1 and 6 are grey "PHOTO GOES HERE" boxes.
+   The quickest way to replace them, straight from the phone files:
 
-Nothing else in the write-up needs changing: §7 gives measured figures from an
-x86-64 Linux machine and from a 64-bit Arm Linux machine in the project's continuous
-integration, plus a clearly labelled bound for the Pi itself, and §12's
-declaration of help is complete. If the team ever runs
+   ```bash
+   python SUBMISSION_PACK/_build/add_photos.py --pi PI.jpg --team TEAM.jpg
+   ```
+
+   That strips the photos' metadata (phone photos carry GPS coordinates),
+   resizes them, writes the real captions and rebuilds `WRITEUP.docx` and
+   `WRITEUP.pdf`, so nothing needs doing by hand. Either photo can be given
+   on its own. By hand instead: copy the photos into `photos/` under the
+   names in the README there, then open `WRITEUP.docx`, right-click each grey
+   box → *Change Picture*, and replace the caption with the wording printed
+   inside the box. Do not submit while a grey box is there.
+2. **§9, Figure 6**: the team photo, handled by the same command (or the
+   same manual steps) as Figure 1.
+
+Nothing else in the write-up needs changing. §1's paragraph on why the team
+chose the project is drafted; read it once and change any word that is not
+true for you, since it is the one place a judge expects your own voice. §7
+gives measured figures from an x86-64 Linux machine and from a 64-bit Arm
+Linux machine in the project's continuous integration, plus a clearly
+labelled bound for the Pi itself, and §12's declaration of help is complete. If the team ever runs
 `python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
 that bound.
 
