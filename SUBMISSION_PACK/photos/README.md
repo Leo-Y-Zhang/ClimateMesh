@@ -31,6 +31,64 @@ and tells you how to export a JPEG instead.
 Good light, phone camera is fine. Landscape frames a little better on the
 page, but portrait works: the tool sizes either to the same height.
 
+## How to take them so they look professional
+
+A judge reads the caption against the picture, so the first rule is accuracy:
+the screen must be showing what the caption says it is. Set the scene up for
+real, then photograph it.
+
+**Before you shoot.** On the Pi, start the deterministic flood demo so the
+numbers on screen are the ones the write-up quotes:
+
+```bash
+python run.py --mode demo --scenario flood --judge-mode      # terminal 1
+python -m streamlit run dashboard/app.py                     # terminal 2
+```
+
+Open the Live Map (the four river nodes go red) or Node Detail for Regent's
+Canal (the "Why:" sentence and the sub-score bars — the single most
+impressive screen, because it shows the explanation, not just a number). The
+purple **Digital Twin (Demo)** badge should be visible: being seen to label
+your own data is the whole argument of the entry.
+
+**Photo 1, the Pi.**
+
+- Put the Pi in the foreground, close enough to fill a third of the frame, with
+  the screen behind or beside it. Both need to be sharp, so keep them roughly
+  the same distance from the camera and step back rather than leaning in.
+- Turn portrait mode and flash **off**. Portrait mode blurs whichever one it
+  decides is background; flash puts a white hotspot on the screen.
+- Screens photograph badly: wipe the screen, set its brightness to about 70 %
+  rather than maximum, dim any lamp that is reflecting in it, and shoot from
+  slightly off-axis so you are not mirrored in the glass. Tap the screen to
+  focus, check the text is readable when you zoom into the shot, and retake if
+  it is not.
+- Show the USB-C power lead and the case fan — small details that tell a judge
+  this is a real board doing real work, not a stock photo.
+- Tidy the desk. Anything with your school's name, a letter, a timetable or a
+  name label should be out of frame.
+
+**Photo 2, the two of you.**
+
+- Be doing something: one of you typing, the other pointing at a reading on the
+  screen. Two people smiling at the lens reads as staged; the Inspiration Award
+  is about endeavour, so let the picture show work happening.
+- Frame from about the waist up, camera at the seated person's eye level, with
+  the Pi or the dashboard clearly in shot so it is obviously this project.
+- Light your faces from the front. A window behind you turns you into
+  silhouettes.
+- If you do not want the school identifiable, keep crested blazers, lanyards
+  and name badges out of the frame. Nothing else in this pack names it.
+
+**Both.** Landscape, clean the lens first, brace your elbows on the desk, and
+take eight or ten of each so you can pick the sharpest. Send them straight
+off the phone: do not crop, filter or resize, because the tool does all of
+that and editing apps add metadata of their own.
+
+**Do not stage what is not true.** No sensor you do not own, and no screen
+showing a scenario the caption does not claim. The entry wins on being honest
+about exactly this.
+
 ## By hand instead
 
 Copy the files into this folder as `photo-1-pi-running.jpg` and
