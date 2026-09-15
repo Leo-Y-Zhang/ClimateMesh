@@ -5,8 +5,13 @@ works. It runs, in order:
 
   1. smoke test             (scripts/smoke_test.py)
   2. pytest suite           (python -m pytest -q)
-  3. one *normal* demo cycle (run.py --mode demo --scenario normal --once)
-  4. one *flood*  demo cycle (run.py --mode demo --scenario flood  --once)
+  3. one *normal* demo cycle (run.py --mode demo --scenario normal --judge-mode --once)
+  4. one *flood*  demo cycle (run.py --mode demo --scenario flood  --judge-mode --once)
+
+The two demo cycles run in judge mode (simulation clock frozen at the start of
+the event) so they show exactly the same deterministic frame as
+scripts/demo_tour.py and the README: normal avg 3.9 / 0 alerts, flood avg 50.8
+/ 10 alerts.
   5. evidence export        (scripts/export_evidence.py)
 
 then prints a compact PASS/FAIL summary table that is easy to screenshot. The
@@ -136,10 +141,12 @@ def main() -> int:
         # suppress the "N passed" summary line this step parses for its detail.
         ("2. Pytest suite", [PYTHON, "-m", "pytest"], summarize_pytest),
         ("3. Demo cycle (normal)",
-         [PYTHON, "run.py", "--mode", "demo", "--scenario", "normal", "--once"],
+         [PYTHON, "run.py", "--mode", "demo", "--scenario", "normal",
+          "--judge-mode", "--once"],
          summarize_once),
         ("4. Demo cycle (flood)",
-         [PYTHON, "run.py", "--mode", "demo", "--scenario", "flood", "--once"],
+         [PYTHON, "run.py", "--mode", "demo", "--scenario", "flood",
+          "--judge-mode", "--once"],
          summarize_once),
         ("5. Evidence export", [PYTHON, "scripts/export_evidence.py"], summarize_export),
     ]

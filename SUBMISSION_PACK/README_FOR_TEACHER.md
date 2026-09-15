@@ -10,7 +10,8 @@ the working project itself (code, tests, documentation, screenshots).
 
 | File | What it is |
 |---|---|
-| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 1,800 words with five figures. |
+| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 2,300 words (excluding the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first, then §12, then the ablation table in §6. |
+| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (10 pages), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
 | `figures/` | The cropped dashboard figures used in the write-up. |
@@ -19,21 +20,31 @@ the working project itself (code, tests, documentation, screenshots).
 The full set of dashboard screenshots and terminal evidence is in
 `../docs/screenshots/`.
 
-## Before submitting, please check the three ► markers
+## Before submitting: the ► boxes
 
-The write-up and the form answers contain three marked places that only the
-team can complete truthfully:
+The write-up contains five marked boxes (►) that only the team can complete
+truthfully. Search the Word file for "►" to find them all.
 
-1. **Teamwork section** (`WRITEUP.md` §9): who did what.
-2. **Acknowledgements** (§12 and the form answers): any mentors, tutorials or
-   AI-assisted tools, if the rules ask for that declaration.
-3. **School/teacher details** where the entry form requires them. Nothing in
-   this pack names the school or any adult, deliberately.
+1. **Replace the placeholder photo inside WRITEUP.docx.** Figure 1 is
+   currently a grey "PHOTO 1 GOES HERE" box. Open `WRITEUP.docx`, right-click
+   the Figure 1 image → *Change Picture* → choose the real photo of the Pi,
+   then replace the caption with "Figure 1 — The Raspberry Pi 5 running
+   Climate Mesh." Copying the photo into `photos/` only fixes the Markdown
+   version. Do not submit while the grey box is there.
+2. **§1, the personal reason** for choosing this project (one or two
+   sentences, in the students' words).
+3. **§7, measurements from the team's own Pi 5** (or an honest note that a
+   full run on the Pi has not been completed yet).
+4. **§9, Teamwork**: who did what, in the first person; add
+   `photos/photo-2-team.jpg` there.
+5. **§12, help received**: mentors, tutorials and any AI-assisted tools,
+   declared whether or not the form asks.
 
-Also drop the real-world photos into `photos/` using the file names listed
-there; Figure 1 of the write-up points at `photos/photo-1-pi-running.jpg`.
+School and teacher details go only where the entry form itself requires them.
+Nothing in this pack names the school or any adult, deliberately. After
+editing, save the Word file and re-export the PDF (File → Save As → PDF).
 
-## Two-minute verification (optional, any computer)
+## Ten-minute verification (optional, any computer)
 
 ```bash
 cd ClimateMesh
@@ -42,8 +53,11 @@ pip install -r requirements.txt
 python scripts/judge_validate.py
 ```
 
-The last command prints a PASS/FAIL table; the expected result is
-**PASS (5/5 steps passed)** with **166 passed** tests. `python
+The `pip install` line is most of that time (it downloads about 200 MB); the
+check itself takes about two minutes. The last command prints a PASS/FAIL
+table; the expected result is **PASS (5/5 steps passed)** with **173 passed**
+tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
+cycle at 50.8 with 10 alerts. `python
 scripts/demo_tour.py` shows all five scenarios in about thirty seconds. Both
 work with no internet and no sensors. To see the dashboard, run the two
 commands at the end of the main `README.md`.

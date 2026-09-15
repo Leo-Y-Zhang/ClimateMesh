@@ -12,5 +12,6 @@ write-up's figure links resolve:
 Landscape orientation, good light, phone camera is fine. Keep each file under
 about 3 MB (resize to roughly 2000 px wide if needed).
 
-After adding `photo-2-team.jpg`, you may add it to the write-up as a second
-figure in §9 (Teamwork); the Word file can be edited directly.
+Then change the pictures inside `WRITEUP.docx` as well (right-click the
+Figure 1 placeholder → Change Picture; insert `photo-2-team.jpg` in §9).
+Copying files into this folder only updates the Markdown version.

@@ -10,8 +10,8 @@ or trimmed. Anything in **► brackets** must be filled in or checked first.
 teacher details as the form requires; nothing else in this pack names them]**
 
 **One-line summary (20 words):**
-A Raspberry Pi 5 runs a 20-node climate-risk mesh with explainable AI and
-plain-English alerts, fully offline.
+An £85 Raspberry Pi that tells a school, in plain English, when its street may
+flood and what to do.
 
 **Short description (about 100 words):**
 Climate Mesh is a decentralised climate early-warning mesh that runs on a
@@ -35,16 +35,16 @@ canonical reading shape with a source label and a quality flag, so the system
 is sensor-ready without being sensor-dependent. For each node a risk engine
 computes six hazard sub-scores and combines them into a 0–100 score with SAFE,
 MODERATE, WARNING and CRITICAL bands. An Isolation Forest learns the normal
-shape of the data and flags anomalous combinations before any single value
-crosses a hard limit, multiplying risk by up to 1.5× and reporting which
-channels deviate most. Two nodes within 6 km are neighbours; a 1.2× mesh
-multiplier fires only when a node and at least two neighbours are elevated for
+shape of the data and flags anomalous combinations while every channel is
+still only moderately elevated, multiplying graded risk by up to 1.5× (it can
+amplify risk, never create it) and reporting which channels deviate most. Two
+nodes within 6 km are neighbours; a 1.2× mesh multiplier fires only when a node and at least two neighbours are elevated for
 the same hazard. WARNING and CRITICAL results raise plain-English alerts with
 practical playbooks (clear drains, open a cooling room, move outdoor PE). A
 seven-tab dashboard shows a live risk map, network overview, per-node
 explanations, AI explainability, evidence export, hardware readiness and the
 pitch, and every panel carries a provenance badge so simulated data is never
-mistaken for real. 166 automated tests pass on Python 3.11–3.13 and a single
+mistaken for real. 173 automated tests pass on Python 3.11–3.13 and a single
 command, `python scripts/judge_validate.py`, reproduces the evidence. No
 physical sensor has been validated yet; the software is honest about that on
 every screen.
@@ -52,32 +52,39 @@ every screen.
 **How does the project use the Raspberry Pi?**
 The Pi 5 is the whole product. It runs the data source (simulator, live API or
 a USB Vernier sensor), the scikit-learn anomaly model, the risk engine, the
-SQLite database and the Streamlit web dashboard simultaneously, headless, on a
-few watts. Setup is one script. The dashboard binds to the Pi's loopback
+SQLite database and the Streamlit web dashboard simultaneously, headless.
+Setup is one script. **► Add one measured line from your own Pi (cycle time,
+CPU %, memory) if you have it.** The dashboard binds to the Pi's loopback
 interface and is viewed over SSH, so nothing is exposed on the school network,
 and the map has an offline basemap so it works with no internet at all.
 
 **What problem does it solve and who benefits?**
-It gives the people who respond first, a site manager, a receptionist, a
-residents' group, a readable risk score, the reason it is rising and three
-practical things to do, for the places official gauges do not cover. It stores
-no personal data and needs no subscription, so a school can adopt it without a
-cloud bill or a data-protection review.
+It helps the people who respond first: a school site manager, a receptionist,
+a residents' group. For the streets that official gauges do not cover, it
+gives them a risk score they can read at a glance, the reason it is rising,
+and three practical things to do right now. It stores no personal data and
+needs no subscription, so a school can adopt it without a cloud bill or a
+data-protection review.
 
 **What is innovative about it?**
-(1) A canonical reading contract that makes sensors, live APIs and simulation
-interchangeable. (2) Mesh correlation as trust: escalation requires agreement
-between adjacent nodes for the same hazard. (3) Provenance-first honesty: every
-reading, panel, alert and exported row carries its source and quality flag,
-and a "Physical Sensor" badge can only appear when a device really returned
-data. (4) One-command reproducibility for judges.
+(1) Neighbours as a trust signal: a cheap node's risk is escalated (×1.2) only
+when it and at least two neighbours within 6 km are elevated for the same
+hazard, so a network of £85 nodes is harder to fool than one expensive sensor.
+(2) A bounded, explainable AI layer: an Isolation Forest flags unusual
+combinations of readings and names the channels responsible, but can only
+amplify graded risk (up to 1.5×), never create it, so a false anomaly can never
+raise an alert on its own. (3) A canonical reading contract with provenance:
+sensors, live APIs and simulation are interchangeable, and every reading,
+panel, alert and exported row carries its source and quality flag, enforced in
+code. (4) The whole pipeline, model included, runs offline on one Pi 5 and is
+reproducible from a clean copy with a single command.
 
 **What was the hardest part?**
 Making an honest system rather than an impressive one: deciding that a reading
 may only be called "hardware" after a device physically opens, flagging
 derived values as estimated, and recording whether the AI trained on real or
-synthetic data. Making the demo fully deterministic, and testing a live
-dashboard automatically, were the other two.
+synthetic data. Making the demo fully deterministic, and running the whole
+dashboard through an automated test harness, were the other two.
 
 **What did you learn?**
 How anomaly detection differs from thresholds; why provenance matters in
@@ -111,8 +118,10 @@ yet validated on a device. The dashboard labels the source of every value.
 Source code and screenshots are in the submitted zip. **► Add the GitHub
 repository link if the form asks for one and the repository is up to date.**
 
-**Acknowledgements:**
+**Acknowledgements and help received:**
 Streamlit, scikit-learn, pandas, NumPy, Plotly; Open-Meteo (free weather
-data); Vernier godirect/gdx; WMO early-warning statistics; NOAA heat-index
-formulation. **► Declare any mentors, tutorials or AI-assisted tools if the
-rules ask.**
+data); Vernier godirect/gdx; WMO/UNDRR early-warning statistics; NOAA
+heat-index formulation. **► Declare help received whether or not the form
+asks: any teacher or mentor input, tutorials followed, and any AI-assisted
+tools (named) and what they were used for; then say which parts you designed
+and wrote yourselves.**
