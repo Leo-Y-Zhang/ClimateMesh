@@ -236,7 +236,10 @@ the same time, headless, at the site.
 :::
 
 A community node therefore costs less than a hundred pounds before sensors;
-the software costs nothing and needs no subscription.
+the software costs nothing and needs no subscription. Our own Pi 5 and sensor
+came free in the competition's starter kit, so those are replacement prices
+for anyone else building a node, not what we spent: the barrier to a school
+copying this is a spare afternoon, not a budget.
 
 **Speed.** The per-cycle cost is small: the 20 nodes are scored by the
 Isolation Forest in one batch rather than one at a time, which cut a full

@@ -103,11 +103,13 @@ Pi nodes (Wi-Fi first, LoRa later); publish a priced node kit once a real node
 has been built and run from it.
 
 **Equipment used:**
-Raspberry Pi 5 (4 GB), 27 W USB-C power supply, 32 GB microSD card, case
-(approximate core node cost £85); development and continuous integration also
-on x86-64 and 64-bit Arm Linux machines. The code supports an optional Vernier
-Go Direct Weather sensor (GDX-WTHR) over USB; that adapter is tested with a
-stand-in device and no physical sensor has been validated yet. Software:
+Raspberry Pi 5 (4 GB), 27 W USB-C power supply, 32 GB microSD card, case,
+all from the competition's starter kit at no cost to us (£85 to replace);
+development and continuous integration also on x86-64 and 64-bit Arm Linux
+machines. The kit also includes a Vernier Go Direct Weather sensor
+(GDX-WTHR), which the code supports over USB; that adapter is tested with a
+stand-in device and no reading from the physical sensor has been validated
+yet. Software:
 Python 3.11+, Streamlit, scikit-learn, pandas, NumPy, Plotly, SQLite.
 
 **Safety statement:**
