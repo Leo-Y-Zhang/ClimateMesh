@@ -1,8 +1,8 @@
 """Explainable risk engine for Climate Mesh.
 
-For each node it computes six 0-25 sub-scores (temperature, humidity, air
-quality, water level, wind, pressure), combines them into a 0-100 base score,
-then amplifies that by an AI anomaly multiplier and a mesh-correlation
+For each node it computes six 0-100 hazard sub-scores (temperature, humidity,
+air quality, water level, wind, pressure), combines them (worst hazard + 20% of
+the rest) into a 0-100 base score, then amplifies that by an AI anomaly multiplier and a mesh-correlation
 multiplier. A single isolated spike is treated with caution; the same anomaly
 confirmed across adjacent nodes escalates the risk — that is the core mesh
 idea. Every result carries its top contributing factors and a plain-English
@@ -13,6 +13,7 @@ duplicates.
 from __future__ import annotations
 
 import asyncio
+import math
 
 from ai.anomaly_model import AnomalyDetector
 from backend.playbooks import playbook_text
@@ -47,7 +48,18 @@ def _lin(x: float, x0: float, y0: float, x1: float, y1: float) -> float:
     return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
 
 
+def _finite(x: float) -> bool:
+    """True for an ordinary number. NaN/inf compare False against every
+    threshold, which would otherwise fall through to the *maximum* severity;
+    a non-measured value must score 0, never CRITICAL."""
+    try:
+        return math.isfinite(float(x))
+    except (TypeError, ValueError):
+        return False
+
+
 def _temp_sub(t: float) -> float:
+    if not _finite(t): return 0.0
     if t >= 45:  return 100.0
     if t >= 40:  return _lin(t, 40, 90, 45, 100)
     if t >= 36:  return _lin(t, 36, 70, 40, 90)
@@ -61,6 +73,7 @@ def _temp_sub(t: float) -> float:
 
 
 def _humidity_sub(h: float) -> float:
+    if not _finite(h): return 0.0
     if h >= 100: return 70.0
     if h >= 85:  return _lin(h, 85, 25, 100, 70)
     if h > 25:   return 0.0
@@ -70,6 +83,7 @@ def _humidity_sub(h: float) -> float:
 
 
 def _aqi_sub(a: float) -> float:
+    if not _finite(a): return 0.0
     if a >= 500: return 100.0
     if a >= 300: return _lin(a, 300, 90, 500, 100)
     if a >= 200: return _lin(a, 200, 70, 300, 90)
@@ -80,6 +94,7 @@ def _aqi_sub(a: float) -> float:
 
 
 def _water_sub(w: float) -> float:
+    if not _finite(w): return 0.0
     if w >= 8:   return 100.0
     if w >= 6:   return _lin(w, 6, 95, 8, 100)
     if w >= 4:   return _lin(w, 4, 75, 6, 95)
@@ -90,6 +105,7 @@ def _water_sub(w: float) -> float:
 
 
 def _wind_sub(v: float) -> float:
+    if not _finite(v): return 0.0
     if v >= 35: return 100.0
     if v >= 25: return _lin(v, 25, 80, 35, 100)
     if v >= 15: return _lin(v, 15, 45, 25, 80)
@@ -98,6 +114,7 @@ def _wind_sub(v: float) -> float:
 
 
 def _pressure_sub(p: float) -> float:
+    if not _finite(p): return 0.0
     if p <= 970:  return 100.0
     if p <= 980:  return _lin(p, 980, 80, 970, 100)
     if p <= 990:  return _lin(p, 990, 55, 980, 80)
@@ -123,6 +140,22 @@ _FACTOR_LABELS = {
     "pressure_sub": ("pressure drop", "storm"),
 }
 
+# Hazards an alert can be filed under (each has a headline and a playbook).
+HAZARDS = ("flood", "smog", "heatwave", "storm", "cold")
+
+
+def _hazard_for(sub_key: str, reading: dict) -> str:
+    """Dominant hazard for the top sub-score, taking the *direction* into
+    account: temperature and humidity are two-sided scales, so a frosty
+    morning is a cold hazard (not a 'heatwave') and very dry air is not a
+    flood signal."""
+    hazard = _FACTOR_LABELS[sub_key][1]
+    if sub_key == "temp_sub" and float(reading.get("temperature", 15.0)) < 24:
+        return "cold"
+    if sub_key == "humidity_sub" and float(reading.get("humidity", 60.0)) < 85:
+        return "risk"
+    return hazard
+
 
 def calculate_base(reading: dict, detector: AnomalyDetector) -> dict:
     """Compute the per-node base risk (no mesh correlation yet)."""
@@ -146,7 +179,7 @@ def calculate_base(reading: dict, detector: AnomalyDetector) -> dict:
     # Top contributing factors, in order of contribution.
     ranked = sorted(subs.items(), key=lambda kv: kv[1], reverse=True)
     top_factors = [_FACTOR_LABELS[k][0] for k, v in ranked if v >= 15.0][:3]
-    dominant_hazard = _FACTOR_LABELS[ranked[0][0]][1] if ranked[0][1] >= 15.0 else "risk"
+    dominant_hazard = _hazard_for(ranked[0][0], reading) if ranked[0][1] >= 15.0 else "risk"
 
     return {
         "node_id": reading["node_id"],
@@ -186,6 +219,7 @@ def _contributor_phrase(label: str, reading: dict) -> str:
         word = ("extreme heat" if t >= 40 else
                 "very high temperature" if t >= 36 else
                 "high temperature" if t >= 30 else
+                "warm temperature" if t >= 24 else
                 "extreme cold" if t <= -5 else
                 "freezing temperature" if t < 0 else "low temperature")
         return f"{word} ({t:.0f} °C)"
@@ -216,12 +250,13 @@ def _explanation(reading: dict, base: dict, score: float,
                if base["top_factors"] else "multiple factors")
     level = risk_level(score)
     if level == SAFE:
-        return f"{name}: conditions normal. Risk score {score:.0f}/100."
+        return f"{name}: conditions normal. Risk score {math.floor(score)}/100."
     headline = {
         "flood": "Flood risk rising",
         "smog": "Air-quality risk rising",
         "heatwave": "Heat risk rising",
         "storm": "Storm risk rising",
+        "cold": "Cold risk rising",
         "risk": "Risk rising",
     }.get(hazard, "Risk rising")
     mesh_clause = (
@@ -229,7 +264,7 @@ def _explanation(reading: dict, base: dict, score: float,
         if correlated else " Currently an isolated reading."
     )
     return (f"{headline} near {name}.{mesh_clause} "
-            f"Risk score {score:.0f}/100. Main contributors: {factors}.")
+            f"Risk score {math.floor(score)}/100. Main contributors: {factors}.")
 
 
 def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
@@ -240,23 +275,28 @@ def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
     results = []
     for node_id, base in bases.items():
         reading = reading_by_id[node_id]
-        # Mesh correlation: count neighbours that are also elevated/anomalous.
+        # Mesh correlation: count neighbours that are also elevated/anomalous
+        # for the SAME hazard -- "same trend", not merely "also busy".
         neighbours = NEIGHBOURS.get(node_id, [])
         elevated_neighbours = sum(
             1 for n in neighbours
-            if n in bases and (bases[n]["base_score"] >= _ELEVATED_BASE or bases[n]["is_anomaly"])
+            if n in bases
+            and bases[n]["dominant_hazard"] == base["dominant_hazard"]
+            and (bases[n]["base_score"] >= _ELEVATED_BASE or bases[n]["is_anomaly"])
         )
         self_elevated = base["base_score"] >= _ELEVATED_BASE or base["is_anomaly"]
         correlated = self_elevated and elevated_neighbours >= 2
         mesh_multiplier = _MESH_MULTIPLIER if correlated else 1.0
 
-        score = min(100.0, base["base_score"] * base["ai_multiplier"] * mesh_multiplier)
+        # Round once, up front, so the stored score, the band and the text a
+        # judge reads all agree (79.96 must not be WARNING with "80/100").
+        score = round(min(100.0, base["base_score"] * base["ai_multiplier"] * mesh_multiplier), 1)
         level = risk_level(score)
         explanation = _explanation(reading, base, score, correlated, elevated_neighbours)
 
         results.append({
             "node_id": node_id,
-            "score": round(score, 1),
+            "score": score,
             "level": level,
             "temp_sub": base["temp_sub"],
             "humidity_sub": base["humidity_sub"],
@@ -287,7 +327,7 @@ def maybe_alert(reading: dict, risk: dict) -> bool:
         return False
 
     hazard = risk["dominant_hazard"]
-    alert_type = hazard if hazard in ("flood", "smog", "heatwave", "storm") else "risk"
+    alert_type = hazard if hazard in HAZARDS else "risk"
     severity = "critical" if risk["level"] == CRITICAL else "warning"
 
     recent = get_recent_alert(reading["node_id"], alert_type, ALERT_COOLDOWN_SECONDS)

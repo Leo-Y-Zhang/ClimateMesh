@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -64,6 +65,18 @@ def _active_scenario() -> str:
     except (json.JSONDecodeError, OSError):
         pass
     return "normal"
+
+
+def _local_hms(ts: str) -> str:
+    """Render a stored UTC ISO timestamp as local wall-clock HH:MM:SS.
+
+    Rows are stored in UTC; a judge in the UK during BST would otherwise see
+    every alert stamped an hour early with nothing to explain why.
+    """
+    try:
+        return datetime.fromisoformat(ts).astimezone().strftime("%H:%M:%S")
+    except (TypeError, ValueError):
+        return str(ts)
 
 
 def _scatter_map(df: pd.DataFrame):
@@ -166,8 +179,8 @@ with st.sidebar:
     else:
         st.info("Waiting for data…")
     st.divider()
-    refresh = st.checkbox("Auto-refresh (2s)", value=True)
-    st.caption("Climate Mesh v2.0 · honest by design")
+    refresh = st.checkbox("Auto-refresh (2s)", value=True, key="auto_refresh")
+    st.caption("Climate Mesh · honest by design")
 
 # --- Tabs -----------------------------------------------------------------
 tabs = st.tabs([
@@ -187,7 +200,9 @@ with tabs[0]:
                     unsafe_allow_html=True)
         st.plotly_chart(_scatter_map(merged), use_container_width=True)
         st.caption("Marker colour & size = risk score (green safe → red critical). "
-                   "Hover a node to see its data source.")
+                   "Hover a node to see its data source. The base-map tiles are the "
+                   "one thing that needs internet — with no connection the nodes and "
+                   "their colours still render on a blank background.")
     else:
         st.info("Map appears once the engine is running.")
 
@@ -240,7 +255,7 @@ with tabs[1]:
         if alerts:
             for a in alerts[:12]:
                 icon = "🔴" if a["severity"] == "critical" else "🟠"
-                ts = a["timestamp"].split("T")[1][:8] if "T" in a["timestamp"] else a["timestamp"]
+                ts = _local_hms(a["timestamp"])
                 st.markdown(f"{icon} **[{ts}]** `{a['node_id']}` — {a['message']}")
         else:
             st.success("No active alerts — all nodes within safe parameters.")
@@ -280,7 +295,7 @@ with tabs[2]:
 
         if not rrow.empty:
             r = rrow.iloc[0]
-            st.metric("Risk score", f"{r['score']:.0f}/100", r["level"])
+            st.metric("Risk score", f"{r['score']:.0f}/100", r["level"], delta_color="off")
             st.markdown(f"**Why:** {r['explanation']}")
             subs = {"Temperature": r["temp_sub"], "Humidity": r["humidity_sub"],
                     "Air quality": r["aqi_sub"], "Water level": r["water_sub"],
@@ -293,8 +308,9 @@ with tabs[2]:
         history = get_node_history(node_id, minutes=10)
         if len(history) > 1:
             hist = pd.DataFrame(history)
-            hist["timestamp"] = pd.to_datetime(hist["timestamp"])
-            st.subheader("Recent history (last 10 min)")
+            hist["timestamp"] = (pd.to_datetime(hist["timestamp"], utc=True)
+                                 .dt.tz_convert(datetime.now().astimezone().tzinfo))
+            st.subheader("Recent history (last 10 min, local time)")
             for ch, unit in [("temperature", "°C"), ("water_level", "m"),
                              ("air_quality", "AQI"), ("barometric_pressure", "hPa")]:
                 line = px.line(hist, x="timestamp", y=ch, title=f"{ch.replace('_', ' ').title()} ({unit})")
@@ -379,7 +395,7 @@ with tabs[5]:
     # Provenance is derived from ACTUAL DATA, not driver-library presence. A
     # library being importable does NOT mean a device was read, so the badge is
     # "hardware" ONLY when a live reading actually carries source=="hardware".
-    _sources_in_view = readings_df["source"] if not readings_df.empty else []
+    _sources_in_view = readings_df["source"].tolist() if not readings_df.empty else []
     _hardware_reading_present = "hardware" in set(_sources_in_view)
     _effective_source = effective_source_from_readings(_sources_in_view)
     st.markdown("**Current node provenance:** " + source_badge_html(_effective_source),
@@ -405,7 +421,7 @@ with tabs[5]:
         "adc_air_quality_library": status["adc_air_quality_available"],
     })
     st.markdown(
-        "### Planned Vernier adapter pathway\n"
+        "### Vernier adapter pathway (implemented, awaiting a device)\n"
         "- `sensors/vernier_adapter.py` already implements the hardware path. When a "
         "Vernier Go Direct Weather sensor is connected over USB, its node emits "
         "`source=\"hardware\"` readings while the rest of the mesh stays simulated.\n"
@@ -425,10 +441,11 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Climate Mesh — competition pitch")
     st.markdown(
-        "**1. Real-world problem.** Flood-zone maps put the local area at risk, but the nearest "
-        "official gauge is kilometres away — the areas most at risk aren't being watched. "
-        "Over 90% of weather-related deaths since 1970 occurred where early-warning "
-        "coverage was inadequate (WMO; figure not independently verified).\n\n"
+        "**1. Real-world problem.** Official flood-zone maps say a neighbourhood is at risk, "
+        "but the nearest official gauge can be kilometres away — the places most at risk "
+        "are the least watched. The WMO reports that countries with limited early-warning "
+        "coverage suffer disaster mortality nearly eight times higher than those with "
+        "substantial coverage (WMO, *Global Status of Multi-Hazard Early Warning Systems*, 2023).\n\n"
         "**2. Technical innovation.** A decentralised mesh of 20 London nodes, an "
         "explainable Isolation Forest anomaly model, mesh correlation (nearby nodes "
         "confirming a trend escalate risk), and plain-English alerts with action playbooks.\n\n"

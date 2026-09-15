@@ -32,7 +32,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **144/144 automated tests pass**; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **166/166 automated tests pass** on Python 3.11, 3.12 and 3.13; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
 - The 30-second demo tour (`python scripts/demo_tour.py`) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -46,9 +46,9 @@ not field measurements; no physical sensor has been validated yet)*:
 > **simulated** and/or **live API** data. Every reading shows its source
 > (`simulation` / `demo` / `api` / `hardware`) so nothing is ever overstated.
 
-Built by **two sixth-form students** for the PA Raspberry Pi
-Competition 2026 — theme *Building a Positive Human Future* (Safer Societies &
-Sustainable World).
+Built by **two sixth-form students** (years 12–13 category) for the PA
+Raspberry Pi Competition 2026/27 — theme *Building a Positive Human Future*
+(Safer Societies & Sustainable World).
 
 ---
 
@@ -158,14 +158,19 @@ Vernier Go Direct Weather sensor is connected over USB, that node switches to
 
 ## Quick start (any computer)
 
-**Prerequisites:** Python **3.13** (what CI runs, and the only version the suite
-is verified on) and `git`. Nothing else — no compiler, database, solver, cloud
-account or API key. Every requirement publishes a prebuilt wheel for Linux,
-Windows and macOS, so the install needs no build toolchain, and the demo runs
-entirely offline. The pinned dependency set also resolves on Python 3.9–3.12
-and nothing in the tree uses syntax newer than 3.8, so an older interpreter
-will very likely work; it is just not tested here. The download is dominated
-by scikit-learn, pandas and numpy.
+**Prerequisites:** Python **3.11, 3.12 or 3.13** and `git`. The full test
+suite, the demo tour and the judge validation have been run on all three
+versions with identical output; CI runs 3.11 (what Raspberry Pi OS Bookworm
+ships) and 3.13 (what the Trixie-based release ships). Nothing else is needed
+— no compiler, database, solver, cloud account or API key. Every requirement
+publishes a prebuilt wheel for Linux, Windows and macOS, so the install needs
+no build toolchain, and the demo runs entirely offline. Nothing in the tree
+uses syntax newer than 3.8, so Python 3.9–3.10 will very likely work too; they
+are just not tested. The download is dominated by scikit-learn, pandas and
+numpy.
+
+> **Got this as a zip?** Unzip it and `cd` into the folder — skip the
+> `git clone` line below. Everything else is identical.
 
 ```bash
 git clone https://github.com/Leo-Y-Zhang/ClimateMesh.git
@@ -185,7 +190,7 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 144 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 166 tests + 2 demo cycles + export
 ```
 
 **One-click (Windows):** double-click **`start.bat`** — it installs deps, starts the
@@ -251,8 +256,11 @@ The `--ai-training` flag selects the anomaly model's training data:
 `synthetic` (default, offline), `historical` (real Open-Meteo ERA5 archive), or
 `auto` (historical with a deterministic synthetic fallback when offline).
 
-Scenarios can also be triggered live from the dashboard sidebar while the engine
-runs.
+Scenarios can also be switched live from the dashboard sidebar while the engine
+runs — in every mode, `--judge-mode` included (judge mode freezes the simulation
+clock so each scenario shows the same deterministic frame; it does not lock the
+picker). In `simulation` mode, `--judge-mode` switches to the same seeded
+generator as `demo`, so "screenshot-stable" is exactly what you get.
 
 ## Screenshots to capture
 
@@ -328,6 +336,8 @@ ClimateMesh/
     playbooks.py             # community action playbooks per hazard
   data/database.py           # SQLite storage (readings, risk, alerts, runs)
   dashboard/app.py           # 7-tab Streamlit dashboard
+  dashboard/badges.py        # provenance + quality badge wording (pure, unit-tested)
+  data/sensor_config.json    # optional: which node the physical sensor represents
   scripts/
     judge_validate.py        # ONE command: smoke + pytest + demos + export + table
     demo_tour.py             # ONE command: all 5 scenarios, deterministic summary table
@@ -413,9 +423,12 @@ to **1.5×**.
 
 For each node the engine computes six 0–100 hazard sub-scores — temperature,
 humidity, air quality, water level, wind, pressure — and combines them
-(worst hazard + 20% of the rest) into a 0–100 **base score**. It then applies:
+(worst hazard + 20% of the rest) into a 0–100 **base score**. Temperature and
+humidity are two-sided: a frosty morning is filed as a **cold** hazard with its
+own playbook, never as a "heatwave". It then applies:
 
-- **AI multiplier** (1.0–1.5×) when the Isolation Forest confirms an anomaly, and
+- **AI multiplier** (up to 1.5×; in practice 1.25–1.5× once the Isolation
+  Forest confirms an anomaly, and exactly 1.0× otherwise), and
 - **Mesh multiplier** (1.2×) when **2+ adjacent nodes** show the same trend — a
   single spike is trusted less than a correlated regional event.
 
@@ -450,8 +463,10 @@ never confused. See [docs/evidence_checklist.md](docs/evidence_checklist.md).
   `python run.py --mode demo --scenario flood --judge-mode`.
 - **`api` mode shows a fallback note** → no internet; it automatically uses
   simulation. This is expected and clearly labelled.
-- **Map doesn't render** → the bundled Streamlit/Plotly versions use OpenStreetMap
-  tiles (no API key). Ensure `pip install -r requirements.txt` completed.
+- **Map doesn't render** → the bundled Streamlit/Plotly versions use free
+  OpenStreetMap-based tiles (no API key). Ensure `pip install -r requirements.txt`
+  completed. The base-map tiles are the one thing that needs internet: fully
+  offline, the 20 nodes and their risk colours still draw, on a blank background.
 - **`pytest: command not found`** → use `python -m pytest`.
 - **Reset everything** → `python scripts/reset_demo_db.py`.
 
@@ -468,7 +483,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (144 tests)
+pytest                               # the full unit-test suite (166 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

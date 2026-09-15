@@ -53,9 +53,11 @@ genuine pollution reading.
 
 The physical node does not replace the simulation — it is checked against it. We
 run the live hardware node alongside its simulated **digital twin** for the same
-location and compare readings using `python scripts/run_validation.py`. Close
-agreement validates the sensor; large divergence flags a fault or a real
-environmental event worth investigating.
+location and compare the two rows in the evidence export
+(`python scripts/export_evidence.py` → `evidence/readings.csv`, filtered to the
+hardware node: the `source="hardware"` row against the `source="simulation"`
+rows for the same `node_id`). Close agreement validates the sensor; large
+divergence flags a fault or a real environmental event worth investigating.
 
 ## The sensor-swap promise
 

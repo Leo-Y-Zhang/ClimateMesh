@@ -57,14 +57,24 @@ _RAMP_SECONDS = 12.0
 
 
 def _heat_index(temp: float, humidity: float) -> float:
-    """Approximate apparent ('feels like') temperature for warm conditions."""
+    """Apparent ('feels like') temperature for warm conditions, in °C.
+
+    Uses the NOAA/Steadman heat index: the simple formula, switching to the
+    full Rothfusz regression once the average of the two is 80 °F or more
+    (the standard NWS procedure). Below 26 °C the heat index is not defined,
+    so the air temperature is returned unchanged.
+    """
     if temp < 26:
         return temp
-    t = temp
+    t_f = temp * 9 / 5 + 32
     rh = humidity
-    # Simplified Rothfusz regression (metric-adapted, good enough for a demo).
-    hi = (-8.0 + 1.07 * t + 0.2 * rh + 0.004 * t * rh)
-    return max(temp, hi)
+    hi = 0.5 * (t_f + 61.0 + (t_f - 68.0) * 1.2 + rh * 0.094)
+    if (hi + t_f) / 2 >= 80:
+        hi = (-42.379 + 2.04901523 * t_f + 10.14333127 * rh
+              - 0.22475541 * t_f * rh - 6.83783e-3 * t_f * t_f
+              - 5.481717e-2 * rh * rh + 1.22874e-3 * t_f * t_f * rh
+              + 8.5282e-4 * t_f * rh * rh - 1.99e-6 * t_f * t_f * rh * rh)
+    return max(temp, (hi - 32) * 5 / 9)
 
 
 def _wind_chill(temp: float, wind_speed: float) -> float:

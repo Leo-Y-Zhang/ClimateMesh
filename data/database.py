@@ -32,6 +32,10 @@ def _get_conn() -> sqlite3.Connection:
     if getattr(_local, "conn", None) is None or getattr(_local, "path", None) != str(path):
         conn = sqlite3.connect(str(path), timeout=10)
         conn.execute("PRAGMA journal_mode=WAL")
+        # NORMAL is durable enough under WAL (a power cut can lose only the
+        # last transaction, never corrupt the file) and spares the Pi's SD
+        # card an fsync on every commit.
+        conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA busy_timeout=5000")
         conn.row_factory = sqlite3.Row
         _local.conn = conn
@@ -148,6 +152,28 @@ def insert_reading(reading: dict) -> None:
          reading.get("scenario", "none"), reading.get("timestamp") or _now()),
     )
     conn.commit()
+
+
+def insert_readings(readings: list[dict]) -> None:
+    """Insert a whole tick of readings in ONE transaction (one fsync, not 20)."""
+    conn = _get_conn()
+    with conn:
+        for r in readings:
+            conn.execute(
+                """INSERT INTO sensor_readings
+                   (node_id, node_name, environment, latitude, longitude, temperature,
+                    humidity, air_quality, water_level, wind_speed, wind_chill,
+                    heat_index, barometric_pressure, source, is_simulated, quality_flag,
+                    scenario, timestamp)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (r["node_id"], r.get("node_name"), r["environment"],
+                 r.get("latitude"), r.get("longitude"), r["temperature"],
+                 r["humidity"], r["air_quality"], r["water_level"],
+                 r["wind_speed"], r["wind_chill"], r["heat_index"],
+                 r["barometric_pressure"], r["source"],
+                 1 if r["is_simulated"] else 0, r["quality_flag"],
+                 r.get("scenario", "none"), r.get("timestamp") or _now()),
+            )
 
 
 def insert_risk_score(risk: dict) -> None:
