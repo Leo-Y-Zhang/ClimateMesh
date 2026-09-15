@@ -6,8 +6,8 @@ or trimmed. Anything in **► brackets** must be filled in or checked first.
 
 **Project title:** Climate Mesh
 
-**Team:** Luis Yu and Leo Zhang · Years 12–13 category · **► [school and
-teacher details as the form requires; nothing else in this pack names them]**
+**Team:** Luis Yu and Leo Zhang · Years 12–13 category (school and teacher
+details go on the form itself; nothing in this pack names them).
 
 **One-line summary (20 words):**
 An £85 Raspberry Pi that tells a school, in plain English, when its street may
@@ -117,8 +117,9 @@ Open-Meteo data; the physical-sensor path is implemented and tested but not
 yet validated on a device. The dashboard labels the source of every value.
 
 **Links:**
-Source code and screenshots are in the submitted zip. **► Add the GitHub
-repository link if the form asks for one and the repository is up to date.**
+Source code, screenshots and this write-up are all in the submitted zip, which
+is the definitive version. The project is also published at
+https://github.com/Leo-Y-Zhang/ClimateMesh.
 
 **Acknowledgements and help received:**
 Streamlit, scikit-learn, pandas, NumPy, Plotly; Open-Meteo (free weather

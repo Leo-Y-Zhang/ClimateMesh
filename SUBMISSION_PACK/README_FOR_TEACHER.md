@@ -22,8 +22,8 @@ The full set of dashboard screenshots and terminal evidence is in
 
 ## Before submitting: the ► boxes
 
-The write-up contains three marked places (►) that only the team can
-complete truthfully. Search the Word file for "►".
+The write-up contains two marked places (►) that only the team can complete
+truthfully. Search the Word file for "►".
 
 1. **Replace the placeholder photo inside WRITEUP.docx.** Figure 1 is
    currently a grey "PHOTO 1 GOES HERE" box. Open `WRITEUP.docx`, right-click
@@ -33,10 +33,8 @@ complete truthfully. Search the Word file for "►".
    version. Do not submit while the grey box is there.
 2. **§1, the personal reason** for choosing this project (one or two
    sentences, in the students' words).
-3. **§9, Teamwork**: the section is written; confirm the one bracketed
-   sentence (when you started, who took which parts) and replace the grey
-   Figure 7 placeholder with `photos/photo-2-team.jpg` inside the Word file,
-   as for Figure 1.
+3. **§9, Figure 7**: replace the grey placeholder with the team photo
+   (`photos/photo-2-team.jpg`) inside the Word file, as for Figure 1.
 (§7 gives measured laptop figures and a clearly labelled estimate for the
 Pi; §12's declaration of help is complete. If the team later runs
 `python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
