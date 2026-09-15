@@ -2,7 +2,8 @@
 
 Competition entry forms tend to ask the same questions in different lengths.
 Everything below is accurate to the submitted code, so it can be pasted as-is
-or trimmed. Anything in **► brackets** must be filled in or checked first.
+or trimmed. Nothing here needs filling in; school and teacher details go on
+the form itself.
 
 **Project title:** Climate Mesh
 
@@ -69,13 +70,13 @@ needs no subscription, so a school can adopt it without a cloud bill or a
 data-protection review.
 
 **What is innovative about it?**
-(1) Neighbours as a trust signal: a cheap node's risk is escalated (×1.2) only
+(1) Neighbours as a trust signal: a cheap node's risk is escalated (1.2×) only
 when it and at least two neighbours within 6 km are elevated for the same
 hazard, so a network of £85 nodes is harder to fool than one expensive sensor.
 (2) A bounded, explainable AI layer: an Isolation Forest flags unusual
 combinations of readings and names the channels responsible, but can only
-amplify graded risk (up to 1.5×), never create it, so a false anomaly can never
-raise an alert on its own. (3) A canonical reading contract with provenance:
+amplify graded risk (up to 1.5×), never create it, so a false anomaly cannot
+turn a SAFE node into an alert. (3) A canonical reading contract with provenance:
 sensors, live APIs and simulation are interchangeable, and every reading,
 panel, alert and exported row carries its source and quality flag, enforced in
 code. (4) The whole pipeline, model included, runs offline on one Pi 5 and is
@@ -98,7 +99,7 @@ claims; and how to run a full ML pipeline on a single-board computer.
 Validate one physical Vernier node against its digital twin; calibrate the
 thresholds against recorded local flood and heat events; link two or more real
 Pi nodes (Wi-Fi first, LoRa later); publish a priced node kit once a real node
-has run on it.
+has been built and run from it.
 
 **Equipment used:**
 Raspberry Pi 5 (4 GB), 27 W USB-C power supply, 32 GB microSD card, case;

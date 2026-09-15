@@ -1,6 +1,6 @@
 ---
 title: "Climate Mesh"
-subtitle: "A decentralised, explainable climate early-warning mesh on a Raspberry Pi 5"
+subtitle: "A decentralised, explainable climate early-warning mesh on a Raspberry Pi 5"
 author: "Luis Yu and Leo Zhang · Years 12–13"
 date: "PA Raspberry Pi Competition 2026/27 · Theme: Building a Positive Human Future (Safer Societies & Sustainable World)"
 ---
@@ -34,18 +34,16 @@ and to be told in plain English what to do.
 
 ## 2. What we built
 
-Climate Mesh is a network of 20 environmental "nodes" across Greater London
-that runs on a single Raspberry Pi 5, fully offline, with no cloud account and
-no API key. Every two seconds each node reports eight channels: temperature,
+Climate Mesh is a network of 20 environmental "nodes" across Greater London,
+simulated or fed by live weather data, that runs on a single Raspberry Pi 5,
+fully offline, with no cloud account and no API key. Every two seconds each node reports eight channels: temperature,
 humidity, air quality, water level, wind speed, wind chill, heat index and
 barometric pressure. A risk engine scores every location from 0 to 100, an
 explainable AI model flags unusual combinations of readings, neighbouring
 nodes have to agree before a risk is escalated, and plain-English alerts with
 community action playbooks appear on a seven-tab dashboard.
 
-![Figure 1 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg)
-
-![Figure 2 — Live Map, flood scenario, demo (simulated) data, on the dashboard's offline basemap. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue lines are the Thames, the Lea, the Wandle and Regent's Canal. The river and canal nodes are the ones in red.](figures/live-map-flood-demo-crop.png)
+![Figure 1 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg){.photo}
 
 ## 3. How it works
 
@@ -53,12 +51,12 @@ community action playbooks appear on a seven-tab dashboard.
 sensor, the live Open-Meteo weather service or our simulator, it is turned into
 the same canonical reading: the eight channels plus a `source` label
 (`hardware` / `api` / `demo` / `simulation`) and a `quality_flag` (`ok` /
-`estimated` / `stale` / `missing`). Everything downstream, the risk engine,
-the AI, the database, the dashboard and the evidence export, only ever sees
+`estimated` / `stale` / `missing`). Everything downstream (the risk engine,
+the AI, the database, the dashboard and the evidence export) only ever sees
 that shape. A real sensor joins the mesh by adding one adapter; nothing else
 changes.
 
-![Figure 3 — The data path. Every source emits the same canonical reading (eight channels plus source and quality flag); one small database file is the only link between the engine and the dashboard.](figures/architecture.png)
+![Figure 2 — The data path. Every source emits the same canonical reading (eight channels plus source and quality flag), so a real sensor is a drop-in and nothing downstream changes; one small database file is the only link between the engine and the dashboard.](figures/architecture.png){.wide}
 
 **An explainable risk score.** For each node the engine computes six hazard
 sub-scores on a 0–100 scale (temperature, humidity, air quality, water level,
@@ -79,7 +77,7 @@ the node's graded risk by up to 1.5×, and the model reports which channels
 deviate most from the learned baseline, so every alert says *why*.
 Deliberately, the AI can amplify risk but never create it: 1.5× a SAFE score
 of 5 is still SAFE, so even the roughly 5 % of ordinary readings an Isolation
-Forest is expected to mis-flag can never raise an alert on their own. Offline
+Forest is expected to mis-flag cannot turn a SAFE node into an alert. Offline
 it trains on 2,000 deterministic synthetic samples; when online it can instead
 train on about 30 days of real hourly ERA5 weather and air quality for a
 representative central-London point from the Open-Meteo archive (cached after
@@ -95,7 +93,7 @@ frame: Hyde Park's own sub-scores give a base of 58.0 (MODERATE). Four of its
 neighbours are elevated for the same flood hazard, so the mesh multiplier
 applies: 58.0 × 1.2 = 69.6, WARNING, and an alert is raised. Regent's Canal,
 by contrast, saturates on its own: water 83.5 + 20 % of (humidity 67.8 +
-pressure 37.3) = 100 before any multiplier. In the heatwave frame Lewisham
+pressure 37.3) = 104.5, capped at 100, before any multiplier. In the heatwave frame Lewisham
 shows both layers at once: base 65.8 (WARNING) × AI 1.26 × mesh 1.2 = 99.5,
 CRITICAL.
 
@@ -104,7 +102,7 @@ containing the plain-English explanation and a playbook of practical, low-risk
 actions for that hazard (flood, heatwave, smog, storm, cold). Alerts are
 rate-limited so the log never fills with duplicates.
 
-![Figure 4 — Node Detail, Regent's Canal, flood scenario, demo data: the "Why:" sentence and the six sub-scores behind a 100/100 score (this node saturates on its base score; see the Hyde Park example above for the mesh layer at work).](figures/node-detail-why-flood-demo.png)
+![Figure 3 — Node Detail, Regent's Canal, flood scenario, demo data: the "Why:" sentence and the six sub-scores behind a 100/100 score (this node saturates on its base score; see the Hyde Park example above for the mesh layer at work).](figures/node-detail-why-flood-demo.png)
 
 **How the parts talk.** The engine writes every reading and score into one
 small database file on the Pi; the dashboard only ever reads that file, so it
@@ -139,13 +137,17 @@ Not any single part, but the combination:
 
 We label exactly what this is and is not.
 
+::: {.tbl-modes}
 | Mode | Data | Internet | Sensors |
-|---|---|---|---|
+|-------|---------------------|----------|------------|
 | `simulation` | Realistic generated data (default) | No | No |
 | `demo` | Deterministic, screenshot-stable data | No | No |
 | `api` | Live Open-Meteo weather and air quality for all 20 locations | Yes, falls back to simulation | No |
 | `hardware` | One physical Vernier weather sensor, simulated mesh for the rest | No | Yes, falls back if absent |
 | `auto` | Hardware, else API, else simulation | Optional | Optional |
+:::
+
+![Figure 4 — Live Map, flood scenario, demo (simulated) data, on the dashboard's offline basemap. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue lines are the Thames, the Lea, the Wandle and Regent's Canal. The river and canal nodes are the ones in red.](figures/live-map-flood-demo-crop.png)
 
 - The 20 nodes sit at well-known London landmarks chosen to exercise the
   environment types (river, residential, urban, park). They are illustrative,
@@ -173,10 +175,15 @@ We label exactly what this is and is not.
   that executes all seven dashboard tabs in Streamlit's headless test harness
   and tests that pin the exact numbers quoted below.
 - `python scripts/judge_validate.py` runs the smoke test, all 173 tests, a
-  normal and a flood demo cycle and the evidence export → **PASS (5 of 5
-  steps)** (output in `figures/terminal-judge_validate.png`).
+  normal and a flood demo cycle and the evidence export → **PASS (5/5 steps
+  passed)**. Its full output is `docs/screenshots/terminal-judge_validate.png`
+  in the repository.
 - `python scripts/demo_tour.py` runs one deterministic cycle of all five
-  scenarios in about thirty seconds. Repeated runs print identical numbers:
+  scenarios in about thirty seconds. Repeated runs print identical numbers;
+  its full output is reproduced in the Appendix.
+
+::: {.keep .tbl-tour}
+The demo tour, one row per scenario:
 
 | Scenario | Average risk | Worst node | Level | Alerts |
 |---|---:|---|---|---:|
@@ -185,79 +192,84 @@ We label exactly what this is and is not.
 | heatwave | 78.8 | Brixton | CRITICAL | 12 |
 | smog | 82.7 | Brixton | CRITICAL | 15 |
 | storm | 98.1 | Brixton | CRITICAL | 20 |
+:::
 
+::: {.keep .tbl-ablation}
 What the AI and mesh layers add, on the same deterministic frames (number of
 nodes in each band):
 
 | Scenario | Sub-scores only | With AI and mesh | What changed |
-|---|---|---|---|
+|------|-----------|------------|---------------------|
 | normal | 20 SAFE | 20 SAFE | Nothing: no node is flagged anomalous, no false alarm. |
 | flood | 4 CRITICAL, 8 MODERATE, 8 SAFE | 4 CRITICAL, 6 WARNING, 2 MODERATE, 8 SAFE | Neighbour agreement lifts six residential and park nodes to WARNING; alerts 4 → 10. |
 | heatwave | 8 CRITICAL, 4 WARNING, 8 MODERATE | 11 CRITICAL, 1 WARNING, 8 MODERATE | The AI flags 11 urban nodes as anomalous; three move from WARNING to CRITICAL. |
 | smog | 12 CRITICAL, 8 MODERATE | 12 CRITICAL, 3 WARNING, 5 MODERATE | Neighbour agreement lifts three river and park nodes; alerts 12 → 15. |
 | storm | 5 CRITICAL, 15 WARNING | 19 CRITICAL, 1 WARNING | 18 AI anomalies plus agreement across 19 nodes. |
+:::
 
 The layers only ever amplify a hazard the sub-scores already see; they cannot
-invent one. These counts are pinned by a test, like every other number here.
+invent one. These counts are pinned by a test, like the other numbers in this section.
 
 ![Figure 5 — Network Overview, flood scenario, demo data: the four river nodes go CRITICAL while inland nodes such as Brixton and Greenwich stay SAFE. The hazard lands where it should, and the purple badge says every value is simulated.](figures/network-overview-flood-demo-crop.png)
-
-![Figure 6 — `python scripts/demo_tour.py`: all five scenarios in one deterministic run. Normal stays quiet, each emergency escalates its own nodes, and the last lines are the plain-English explanation for the worst node.](figures/terminal-demo_tour.png)
 
 ## 7. The Raspberry Pi 5
 
 The Pi 5 is the whole product: it runs the simulator or the live data source,
 the scikit-learn model, the risk engine, the database and the web dashboard at
-the same time, headless, at the site. We kept the per-cycle cost small on
-purpose: the 20 nodes are scored by the Isolation Forest in one batch rather
-than one at a time, which cut a full cycle from about 425 ms to about 23 ms on
-our development machine (a 16 GB x86-64 Linux laptop, Python 3.11), where the
-model trains in 0.2 s and the engine peaks at about 200 MB of memory. Those
-are laptop measurements (`python scripts/pi_benchmark.py` prints them for
-whatever machine it runs on). We have not yet timed it on the Pi itself, so
-for the Pi we give an estimate and label it as one: the Pi 5's Cortex-A76
-cores are roughly three to four times slower than a laptop core on this kind
-of single-threaded Python and scikit-learn work, which puts a full cycle at
-around 100 ms, about 5 % of the 2-second read interval, and the 200 MB
-footprint sits comfortably inside the 4 GB board with the dashboard alongside.
-Every dependency ships a prebuilt 64-bit Arm wheel, so installation on
-Raspberry Pi OS is the same one script as anywhere else.
+the same time, headless, at the site.
 
-Installation is one script (`setup_pi.sh`): it creates a Python environment,
-installs the requirements (no compiler or special tools needed) and runs the
-smoke test. The dashboard is only reachable from the Pi itself, or from a
-laptop connected to it securely over SSH, so nothing is opened up on the school
-network. The map has an offline basemap option, so even the Live Map works
-with no internet.
-
+::: {.keep .tbl-bom}
 **Bill of materials for one node (approximate UK prices, September 2026):**
 
 | Item | Purpose | Approx. cost |
-|---|---|---:|
+|--------------------|---------------------|---------:|
 | Raspberry Pi 5 (4 GB) | Runs everything | £55 |
 | 27 W USB-C power supply | Power | £12 |
 | 32 GB microSD card | OS and software | £8 |
 | Case with fan | Protection | £10 |
 | **Core node total** | | **£85** |
 | Vernier Go Direct Weather (GDX-WTHR), optional | Physical temperature, humidity, wind and pressure | ~£130 |
+:::
 
 A community node therefore costs less than a hundred pounds before sensors;
 the software costs nothing and needs no subscription.
 
+**Speed.** We kept the per-cycle cost small on purpose: the 20 nodes are
+scored by the Isolation Forest in one batch rather than one at a time, which
+cut a full cycle from about 425 ms to about 23 ms on our development machine
+(a 16 GB x86-64 Linux laptop, Python 3.11), where the model trains in 0.2 s
+and the engine peaks at about 200 MB of memory. Those are laptop measurements
+(`python scripts/pi_benchmark.py` prints them for whatever machine it runs on).
+
+**On the Pi.** We have not yet timed it on the Pi itself, so for the Pi we
+give an estimate and label it as one: the Pi 5's Cortex-A76 cores are roughly
+three to four times slower than a laptop core on this kind of single-threaded
+Python and scikit-learn work, which puts a full cycle at around 100 ms, about
+5 % of the 2-second read interval, and the 200 MB footprint sits comfortably
+inside the 4 GB board with the dashboard alongside.
+
+**Installation.** Every dependency ships a prebuilt 64-bit Arm wheel, so
+installation on Raspberry Pi OS is one script (`setup_pi.sh`): it creates a
+Python environment, installs the requirements (no compiler or special tools
+needed) and runs the smoke test. The dashboard is only reachable from the Pi
+itself, or from a laptop connected to it securely over SSH, so nothing is
+opened up on the school network. The map has an offline basemap option, so
+even the Live Map works with no internet.
+
 ## 8. Impact
 
 **What it looks like on the day.** It is a wet November morning. The
-water-level channel at the Regent's Canal node climbs; on its own that might
-be a stuck sensor, so nothing happens yet. Minutes later two neighbouring nodes
-report the same trend, the mesh multiplier fires, and the site manager's
-screen reads: *"Flood risk rising near Regent's Canal (Little Venice). Same
+water-level channel at the Regent's Canal node climbs. Three neighbouring
+nodes report the same trend, so this is not one stuck sensor, and the site
+manager's screen reads: *"Flood risk rising near Regent's Canal (Little Venice). Same
 trend seen across 3 nearby nodes. Risk score 100/100. Main contributors:
 critical water level (4.8 m), very high humidity (99%), falling pressure
 (996 hPa)."* Under it are three things to do now: check and clear the nearby
 drains and gullies, inspect low-lying paths and entrances for standing water,
 and move valuables off the ground floor. The official area warning may follow
 later; the point is that someone on site had a reason to act before it did.
-(That sentence is the actual output of our flood demo, on simulated data.)
+(The quoted alert is the actual output of `python scripts/demo_tour.py` for
+the flood scenario, on simulated data.)
 
 Climate Mesh is aimed at the people who actually respond first: a school site
 manager, a receptionist, a residents' association. For the streets that
@@ -303,19 +315,15 @@ If we were starting again, or advising a Year 10 team: build the honest
 version first, make one command that proves it works, and only then make it
 look good.
 
-![Figure 7 — ► PLACEHOLDER: replace photos/photo-2-team.jpg with a photo of the two of you at the Pi, and change the picture in WRITEUP.docx. Caption to use: "Luis and Leo testing the flood scenario on the Pi."](photos/photo-2-team.jpg)
-
-**What was hardest.** Making an honest system is harder than making an
-impressive one. Deciding that a reading may only be called "hardware" after a
-device physically opens, that a precipitation-derived water level must be
-flagged `estimated`, and that the AI must record whether it trained on real or
-synthetic data, shaped almost every module. Making the demo fully
-deterministic so that every screenshot can be reproduced was a second
-challenge. A third was testing a live dashboard: we now run all seven tabs
-through Streamlit's headless test harness on every test run, which caught a
-real crash (the Hardware Readiness tab failed whenever live data was present,
-because a whole column of data-source labels was being tested as if it were a
-single yes/no value; the two tabs after it never rendered).
+**What was hardest.** The three things above: deciding what the system is
+allowed to claim (a reading is "hardware" only after a device physically
+opens; a water level derived from rainfall is flagged `estimated`; the AI
+records whether it trained on real or synthetic data), making every published
+number reproducible by a stranger, and testing the dashboard itself rather
+than just the maths. The crash the tab test caught was a whole column of
+data-source labels being tested as if it were a single yes/no value, which
+broke the Hardware Readiness tab whenever live data was present and blanked
+the Competition Pitch tab after it.
 
 **What we learned.** The big one: an honest system is more work than an
 impressive one, and the work is mostly saying no to yourself. Technically:
@@ -323,6 +331,8 @@ that anomaly detection finds odd *combinations* that thresholds miss; that a
 test which pins a number you have published is the best guard against quietly
 breaking your own claims; and that a whole machine-learning pipeline really
 does fit on a £55 computer.
+
+![Figure 6 — ► PLACEHOLDER: replace photos/photo-2-team.jpg with a photo of the two of you at the Pi, and change the picture in WRITEUP.docx. Caption to use: "Luis and Leo testing the flood scenario on the Pi."](photos/photo-2-team.jpg){.photo}
 
 ## 10. What we would do next
 
@@ -335,7 +345,7 @@ does fit on a £55 computer.
 3. **Physical mesh links.** Two or more real Pi nodes exchanging readings
    (Wi-Fi first, LoRa later) so neighbour agreement runs across actual devices.
 4. **Node cost pack.** A priced, tested bill of materials for a minimal
-   community node, published once a real node has run on it.
+   community node, published once we have built one from it and run it.
 
 ## 11. Safety, privacy and responsible use
 
@@ -349,7 +359,7 @@ hardware is low-voltage and USB-powered.
 ## 12. Acknowledgements and help received
 
 Built in Python with Streamlit (dashboard), scikit-learn (Isolation Forest),
-pandas, NumPy and Plotly, and SQLite. Live and archive weather data come from
+pandas, NumPy, Plotly and SQLite. Live and archive weather data come from
 the free Open-Meteo service. The hardware path uses Vernier's `godirect`
 driver and `gdx` helper. Early-warning statistics are from the World
 Meteorological Organization and UNDRR. The heat index follows the
@@ -361,8 +371,7 @@ final review of this entry we used an AI coding assistant (Anthropic's
 Claude): it reviewed the code, fixed the bugs it found, added tests, captured
 the screenshots and helped edit this document. No teacher, mentor or other
 adult wrote any part of the code or of this document. The concept, the design
-and the original codebase are our own work, and we can explain every part of
-it.
+and the original codebase are our own work.
 
 ## Appendix — Running it yourself
 
@@ -378,3 +387,30 @@ python -m streamlit run dashboard/app.py                  # terminal 2 → http:
 The repository's `README.md` has the full file map, run modes and
 troubleshooting; `docs/screenshots/` holds every dashboard tab and the terminal
 evidence.
+
+::: {.keep}
+The demo tour's output, exactly as printed (the numbers quoted in §6):
+
+```
+==============================================================================
+  Climate Mesh - Demo Tour (deterministic, synthetic data, no hardware)
+==============================================================================
+  Scenario     Avg   Max  Worst node             Level     Alerts
+------------------------------------------------------------------------------
+  normal       3.9  11.4  Greenwich              SAFE           0
+  flood       50.8 100.0  Regent's Canal (Little Venice) CRITICAL      10
+  heatwave    78.8 100.0  Brixton                CRITICAL      12
+  smog        82.7 100.0  Brixton                CRITICAL      15
+  storm       98.1 100.0  Brixton                CRITICAL      20
+------------------------------------------------------------------------------
+  Risk is 0-100. Every reading above is source=demo, is_simulated=True.
+==============================================================================
+
+  Sample explanation (flood, Regent's Canal (Little Venice)):
+    Flood risk rising near Regent's Canal (Little Venice). Same trend seen across 3 nearby nodes. Risk score 100/100. Main contributors: critical water level (4.8 m), very high humidity (99%), falling pressure (996 hPa).
+
+  RESULT: PASS (5/5 scenarios, deterministic, offline)
+```
+
+:::
+

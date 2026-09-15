@@ -1,6 +1,6 @@
 """Rebuild WRITEUP.docx and WRITEUP.pdf from WRITEUP.md.
 
-Needs: pip install pypandoc_binary playwright pymupdf   (and a Chromium for
+Needs: pip install pypandoc_binary python-docx playwright pymupdf   (and a Chromium for
 Playwright: `playwright install chromium`, or set CHROMIUM to an existing
 binary). Run from anywhere:
 
@@ -25,9 +25,19 @@ FOOTER = ("<div style='font-size:8px;color:#6b7280;width:100%;text-align:center;
 
 
 def build_docx() -> None:
-    pypandoc.convert_file(str(MD), "docx", outputfile=str(PACK / "WRITEUP.docx"),
+    out = PACK / "WRITEUP.docx"
+    pypandoc.convert_file(str(MD), "docx", outputfile=str(out),
                           extra_args=[f"--resource-path={PACK}:{PACK.parent}",
                                       f"--reference-doc={HERE / 'reference.docx'}"])
+    # pandoc leaves the page geometry to Word's locale default; pin A4.
+    import docx
+    from docx.shared import Cm
+    d = docx.Document(str(out))
+    for sect in d.sections:
+        sect.page_width, sect.page_height = Cm(21.0), Cm(29.7)
+        sect.left_margin = sect.right_margin = Cm(2.2)
+        sect.top_margin, sect.bottom_margin = Cm(2.0), Cm(2.2)
+    d.save(str(out))
 
 
 def build_pdf() -> None:
@@ -45,10 +55,23 @@ def build_pdf() -> None:
         pg = b.new_page()
         pg.goto(html.as_uri())
         pg.wait_for_timeout(800)
-        pg.pdf(path=str(PACK / "WRITEUP.pdf"), format="A4", prefer_css_page_size=True,
-               print_background=True, display_header_footer=True,
-               header_template="<div></div>", footer_template=FOOTER)
+        common = dict(format="A4", prefer_css_page_size=True, print_background=True,
+                      header_template="<div></div>", footer_template=FOOTER)
+        # The cover carries no running footer; every other page does.
+        cover = HERE / "_cover.pdf"
+        body = HERE / "_body.pdf"
+        pg.pdf(path=str(cover), page_ranges="1", display_header_footer=False, **common)
+        pg.pdf(path=str(body), page_ranges="2-", display_header_footer=True, **common)
         b.close()
+    import pymupdf
+    out = pymupdf.open()
+    for part in (cover, body):
+        with pymupdf.open(str(part)) as src:
+            out.insert_pdf(src)
+    out.save(str(PACK / "WRITEUP.pdf"), garbage=3, deflate=True)
+    out.close()
+    cover.unlink(missing_ok=True)
+    body.unlink(missing_ok=True)
     html.unlink(missing_ok=True)
 
 

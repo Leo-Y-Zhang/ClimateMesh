@@ -10,7 +10,7 @@ the working project itself (code, tests, documentation, screenshots).
 
 | File | What it is |
 |---|---|
-| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 2,300 words (excluding the ► boxes) with seven figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first, then §12, then the ablation table in §6. |
+| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 2,900 words of body text (excluding tables, captions and the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first, then the ablation table in §6, then the worked examples at the end of §3. Keep §12 (the declaration of help) whatever else goes. |
 | `WRITEUP.pdf` | The same entry as a fixed-layout PDF (11 pages), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
@@ -23,7 +23,7 @@ The full set of dashboard screenshots and terminal evidence is in
 
 ## Before submitting: the ► boxes
 
-The write-up contains two marked places (►) that only the team can complete
+The write-up contains three marked places (►) that only the team can complete
 truthfully. Search the Word file for "►".
 
 1. **Replace the placeholder photo inside WRITEUP.docx.** Figure 1 is
@@ -34,12 +34,13 @@ truthfully. Search the Word file for "►".
    version. Do not submit while the grey box is there.
 2. **§1, the personal reason** for choosing this project (one or two
    sentences, in the students' words).
-3. **§9, Figure 7**: replace the grey placeholder with the team photo
+3. **§9, Figure 6**: replace the grey placeholder with the team photo
    (`photos/photo-2-team.jpg`) inside the Word file, as for Figure 1.
-(§7 gives measured laptop figures and a clearly labelled estimate for the
-Pi; §12's declaration of help is complete. If the team later runs
-`python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
-the estimate.)
+
+Nothing else in the write-up needs changing: §7 gives measured laptop figures
+and a clearly labelled estimate for the Pi, and §12's declaration of help is
+complete. If the team later runs `python scripts/pi_benchmark.py` on the Pi,
+the sentence it prints can replace the estimate in §7.
 
 School and teacher details go only where the entry form itself requires them.
 Nothing in this pack names the school or any adult, deliberately. After
@@ -58,9 +59,9 @@ The `pip install` line is most of that time (it downloads about 200 MB); the
 check itself takes about two minutes. The last command prints a PASS/FAIL
 table; the expected result is **PASS (5/5 steps passed)** with **173 passed**
 tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
-cycle at 50.8 with 10 alerts. `python
-scripts/demo_tour.py` shows all five scenarios in about thirty seconds. Both
-work with no internet and no sensors. To see the dashboard, run the two
+cycle at 50.8 with 10 alerts. Running `python scripts/demo_tour.py` shows all
+five scenarios in about thirty seconds. Both work with no internet and no
+sensors. To see the dashboard, run the two
 commands at the end of the main `README.md`.
 
 ## Honesty note
