@@ -10,12 +10,12 @@ the working project itself (code, tests, documentation, screenshots).
 
 | File | What it is |
 |---|---|
-| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 2,900 words of body text (excluding tables, captions and the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first, then the ablation table in §6, then the worked examples at the end of §3. Keep §12 (the declaration of help) whatever else goes. |
-| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (11 pages), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
+| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 3,000 words of body text (excluding tables, captions and the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first (and the words "its full output is reproduced in the Appendix" in §6), then the ablation table in §6 with the two sentences under it, then the worked examples at the end of §3 (and the "see the Hyde Park example above" clause in the Figure 3 caption). Keep §12 (the declaration of help) whatever else goes. |
+| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (12 pages; the last is the demo tour's full output), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
 | `figures/` | The cropped dashboard figures used in the write-up. |
-| `photos/` | The team's real-world photos of the Pi (see the README inside). |
+| `photos/` | Grey placeholders for the team's real-world photos; replace them before submitting (see the README inside). |
 | `_build/` | Tooling that regenerates the Word and PDF files from `WRITEUP.md` (stylesheet, Word template, script). Not needed for submission; editing the Word file directly is fine. |
 
 The full set of dashboard screenshots and terminal evidence is in
@@ -34,11 +34,12 @@ truthfully. Search the Word file for "►".
    version. Do not submit while the grey box is there.
 2. **§1, the personal reason** for choosing this project (one or two
    sentences, in the students' words).
-3. **§9, Figure 6**: replace the grey placeholder with the team photo
-   (`photos/photo-2-team.jpg`) inside the Word file, as for Figure 1.
+3. **§9, Figure 6**: replace the grey placeholder with the real team photo
+   (save it as `photos/photo-2-team.jpg`, which is currently the same grey
+   box) inside the Word file, as for Figure 1.
 
-Nothing else in the write-up needs changing: §7 gives measured figures from a
-laptop and from a 64-bit Arm Linux machine in the project's continuous
+Nothing else in the write-up needs changing: §7 gives measured figures from an
+x86-64 Linux machine and from a 64-bit Arm Linux machine in the project's continuous
 integration, plus a clearly labelled bound for the Pi itself, and §12's
 declaration of help is complete. If the team ever runs
 `python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
@@ -62,7 +63,7 @@ check itself takes about two minutes. The last command prints a PASS/FAIL
 table; the expected result is **PASS (5/5 steps passed)** with **180 passed**
 tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
 cycle at 50.8 with 10 alerts. Running `python scripts/demo_tour.py` shows all
-five scenarios in about thirty seconds. Both work with no internet and no
+five scenarios in a few seconds. Both work with no internet and no
 sensors. To see the dashboard, run the two
 commands at the end of the main `README.md`.
 

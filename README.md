@@ -33,7 +33,7 @@ with no cloud subscription.
 not field measurements; no physical sensor has been validated yet)*:
 
 - **180/180 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
-- The 30-second demo tour (`python scripts/demo_tour.py`) discriminates
+- The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
   100.0, 10 alerts), and heatwave/smog/storm each escalate their own hazard
@@ -165,7 +165,8 @@ Vernier Go Direct Weather sensor is connected over USB, that node switches to
 **Prerequisites:** Python **3.11, 3.12 or 3.13** and `git`. The full test
 suite, the demo tour and the judge validation have been run on all three
 versions with identical output; CI runs 3.11 (what Raspberry Pi OS Bookworm
-ships) and 3.13 (what the Trixie-based release ships). Nothing else is needed
+ships) and 3.13 (what the Trixie-based release ships) on x86-64, plus 3.11 on
+a 64-bit Arm runner that installs prebuilt wheels only. Nothing else is needed
 — no compiler, database, solver, cloud account or API key. Every requirement
 publishes a prebuilt wheel for Linux, Windows and macOS, so the install needs
 no build toolchain, and the demo runs entirely offline. Nothing in the tree
@@ -291,7 +292,7 @@ Terminal evidence for `demo_tour.py`, `pytest`, `smoke_test.py` and
 same folder. With internet, untick **Offline basemap** and the same nodes sit
 on a street map.
 
-### Screenshots to capture
+### What the screenshots show (and how to retake them)
 
 The dashboard's 7 tabs are all screenshot-worthy — see
 [docs/evidence_checklist.md](docs/evidence_checklist.md). In short:
@@ -301,7 +302,7 @@ Explainability**, **Evidence & Validation**, **Hardware Readiness**, **Competiti
 Pitch**. Every panel carries a provenance badge — **📡 Physical Sensor**, **🌐 Live
 API**, **🎬 Digital Twin (Demo)** or **💻 Offline Simulation** — plus a quality
 badge (✅ ok · ≈ estimated · 🕒 stale · ⚠️ missing), so each shot self-labels its
-data source. Two more terminal screenshots round out the evidence:
+data source. Two terminal screenshots round out the evidence:
 
 - `python scripts/judge_validate.py` → the compact PASS/FAIL validation table.
 - `python scripts/test_hardware_read.py` → **REAL HARDWARE** vs **FALLBACK
@@ -378,7 +379,7 @@ ClimateMesh/
     pi_benchmark.py          # measures cycle time + memory on this machine, prints a sentence
   tests/                     # pytest suite
   docs/                      # hardware driver setup, integration plan, evidence checklist, screenshots
-  SUBMISSION_PACK/           # competition write-up (.md/.docx), entry-form answers, photos
+  SUBMISSION_PACK/           # write-up (.md/.docx/.pdf), entry-form answers, figures, photos, build tooling
 ```
 
 ## Known limitations (honest by design)
@@ -437,7 +438,8 @@ training paths (`run.py --ai-training ...`):
 - **`synthetic` (default):** 2000 deterministic synthetic *normal* samples — no
   internet, used by CI, the smoke test, and `--once`. Fully reproducible.
 - **`historical` / `auto`:** ~30 days of **real** hourly Open-Meteo *archive*
-  (ERA5) weather + air quality for the Greater London area. The first fetch is
+  (ERA5) weather + air quality for one representative central-London point
+  (the CENTRAL-LDN node). The first fetch is
   cached to `ai/_archive_cache.json`, so repeat runs train offline. If the
   archive is unreachable it **falls back deterministically to synthetic** and
   records that as `training_mode = "synthetic_fallback"` — synthetic data is
@@ -505,7 +507,7 @@ never confused. See [docs/evidence_checklist.md](docs/evidence_checklist.md).
 
 ## Competition notes
 
-Climate Mesh was built for the PA Raspberry Pi Competition 2026. Its
+Climate Mesh was built for the PA Raspberry Pi Competition 2026/27. Its
 competition strengths: an **evidence mode** for reproducible judging,
 **explainable alerts**, a **sensor-ready-without-sensors** pipeline, **community
 action playbooks**, **mesh correlation**, a **local digital twin**, and

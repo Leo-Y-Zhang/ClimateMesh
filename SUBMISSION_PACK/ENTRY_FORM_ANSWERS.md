@@ -56,12 +56,11 @@ a USB Vernier sensor), the scikit-learn anomaly model, the risk engine, the
 SQLite database and the Streamlit web dashboard simultaneously, headless.
 The 20 nodes are scored in one batch, so a full cycle takes 13 ms on the
 64-bit Arm Linux machine in our continuous integration and about 23 ms on a
-laptop; on the Pi 5 itself, not yet timed, that bounds a cycle at around
-100 ms even if the Pi were eight times slower, about 5 % of the 2-second read
-interval (`python scripts/pi_benchmark.py` prints the measured figure for any
-machine). Setup is one script. The dashboard binds to the Pi's loopback
-interface and is viewed over SSH, so nothing is exposed on the school network,
-and the map has an offline basemap so it works with no internet at all.
+four-core x86-64 Linux machine; on the Pi 5 itself, which we run but have not
+timed, that bounds a cycle at around 100 ms even if the Pi were eight times
+slower, about 5 % of the 2-second read interval
+(`python scripts/pi_benchmark.py` prints the measured figure for any
+machine).
 
 **What problem does it solve and who benefits?**
 It helps the people who respond first: a school site manager, a receptionist,
@@ -104,10 +103,12 @@ Pi nodes (Wi-Fi first, LoRa later); publish a priced node kit once a real node
 has been built and run from it.
 
 **Equipment used:**
-Raspberry Pi 5 (4 GB), 27 W USB-C power supply, 32 GB microSD card, case;
-optional Vernier Go Direct Weather sensor (GDX-WTHR) over USB. Software:
+Raspberry Pi 5 (4 GB), 27 W USB-C power supply, 32 GB microSD card, case
+(approximate core node cost £85); development and continuous integration also
+on x86-64 and 64-bit Arm Linux machines. The code supports an optional Vernier
+Go Direct Weather sensor (GDX-WTHR) over USB; that adapter is tested with a
+stand-in device and no physical sensor has been validated yet. Software:
 Python 3.11+, Streamlit, scikit-learn, pandas, NumPy, Plotly, SQLite.
-Approximate core node cost £85 (before the optional sensor).
 
 **Safety statement:**
 Low-voltage USB-powered equipment only. No personal data, cameras or
@@ -128,7 +129,9 @@ https://github.com/Leo-Y-Zhang/ClimateMesh.
 Streamlit, scikit-learn, pandas, NumPy, Plotly; Open-Meteo (free weather
 data); Vernier godirect/gdx; WMO/UNDRR early-warning statistics; NOAA
 heat-index formulation. During the final review of the entry we used an AI
-coding assistant (Anthropic's Claude) for code review, bug fixes, tests,
-screenshots and editing the write-up; the concept, design and original
-codebase are our own. No teacher, mentor or other adult wrote any part of the
+coding assistant (Anthropic's Claude), under our direction, for code review
+and bug fixes, new tests, the batched anomaly scoring, the offline basemap,
+the benchmark script and the Arm CI job, the screenshots, and drafting the
+write-up and these answers from the repository's history, which we then read
+and corrected; the concept, design and original codebase are our own. No teacher, mentor or other adult wrote any part of the
 code or the write-up.

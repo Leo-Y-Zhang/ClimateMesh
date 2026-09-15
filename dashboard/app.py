@@ -380,7 +380,7 @@ with tabs[1]:
         else:
             st.success("No active alerts — all nodes within safe parameters.")
     else:
-        st.info("Waiting for sensor data…")
+        st.info("Waiting for readings…")
 
 # === NODE DETAIL ==========================================================
 with tabs[2]:
@@ -440,7 +440,7 @@ with tabs[2]:
         else:
             st.caption("History accumulates as the engine runs.")
     else:
-        st.info("Waiting for sensor data…")
+        st.info("Waiting for readings…")
 
 # === AI EXPLAINABILITY ====================================================
 with tabs[3]:
@@ -449,7 +449,7 @@ with tabs[3]:
     if _training_mode == "historical":
         _train_desc = (
             "real ~30-day **Open-Meteo historical archive** (ERA5) hourly weather "
-            "for the Greater London area")
+            "for one representative central-London point")
     elif _training_mode == "synthetic_fallback":
         _train_desc = (
             "a **deterministic synthetic** normal distribution (historical archive "

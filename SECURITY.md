@@ -15,7 +15,7 @@ the repository is the contact channel.
 
 ## Scope
 
-These are personal projects published for evaluation, not operated services.
+This is a student project published for evaluation, not an operated service.
 There is no production deployment, no user data, and no infrastructure behind
 this repository. Reports about the code itself are welcome; there is no bug
 bounty and no service-level commitment.

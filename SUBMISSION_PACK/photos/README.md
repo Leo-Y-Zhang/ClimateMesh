@@ -5,7 +5,7 @@ write-up's figure links resolve:
 
 | File name | What to photograph |
 |---|---|
-| `photo-1-pi-running.jpg` | The Raspberry Pi 5 with the engine or dashboard visible on a screen next to it. Used as Figure 1 in the write-up. |
+| `photo-1-pi-running.jpg` | The Raspberry Pi 5 with the engine or dashboard visible on a screen next to it (run `python run.py --mode demo --scenario flood --judge-mode` on the Pi for the shot). Used as Figure 1 in the write-up. |
 | `photo-2-team.jpg` | Luis and Leo working on the project at the Pi. |
 | `photo-3-sensor.jpg` | Only if you have one: the Vernier Go Direct Weather sensor plugged into the Pi. Do not stage a sensor you do not have. |
 

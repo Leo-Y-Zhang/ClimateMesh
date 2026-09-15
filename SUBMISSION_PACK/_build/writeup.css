@@ -51,6 +51,9 @@ blockquote { border-left: 4px solid var(--amber); background: #fff7e0; margin: 1
 blockquote p { margin: 0 0 4pt 0; }
 
 /* Code */
+.tour pre { font-size: 7.6pt; line-height: 1.32; }
+.tour p { margin-bottom: 4pt; }
+.tour { margin-top: 10pt; }
 pre { background: #f4f6f8; border: 1px solid var(--rule); border-radius: 4px; padding: 7pt 9pt; font-size: 8.2pt; line-height: 1.35; overflow-x: auto; white-space: pre; margin: 6pt 0 12pt 0; page-break-inside: avoid; }
 pre .co { color: #5a6472; font-style: normal; }
 code { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 0.92em; }
