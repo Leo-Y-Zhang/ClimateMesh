@@ -5,6 +5,12 @@ author: "Luis Yu and Leo Zhang · Years 12–13"
 date: "PA Raspberry Pi Competition 2026/27 · Theme: Building a Positive Human Future (Safer Societies & Sustainable World)"
 ---
 
+![](figures/live-map-flood-demo-crop.png)
+
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
+
 ## 1. The problem
 
 The official river gauge nearest to a school or an estate can be kilometres
@@ -39,7 +45,7 @@ community action playbooks appear on a seven-tab dashboard.
 
 ![Figure 1 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg)
 
-![Figure 2 — Live Map, flood scenario, demo (simulated) data. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue line is the Thames. The red circles are the river and canal nodes.](figures/live-map-flood-demo-crop.png)
+![Figure 2 — Live Map, flood scenario, demo (simulated) data, on the dashboard's offline basemap. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue lines are the Thames, the Lea, the Wandle and Regent's Canal. The river and canal nodes are the ones in red.](figures/live-map-flood-demo-crop.png)
 
 ## 3. How it works
 

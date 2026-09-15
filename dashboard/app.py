@@ -10,6 +10,8 @@ prominently so nobody mistakes simulated or API data for physical-sensor data.
 from __future__ import annotations
 
 import json
+import math
+import re
 import sys
 import time
 from datetime import datetime
@@ -37,15 +39,105 @@ from simulation.scenarios import SCENARIO_INFO, SCENARIOS
 
 DEMO_CONTROL_PATH = Path(__file__).parent.parent / "data" / "demo_control.json"
 
-# Approximate course of the Thames through Greater London (west to east), used
-# only as an orientation line on the tile-free offline basemap.
-_THAMES = [
-    (51.463, -0.320), (51.485, -0.285), (51.470, -0.250), (51.465, -0.215),
-    (51.475, -0.185), (51.480, -0.160), (51.487, -0.135), (51.502, -0.122),
-    (51.508, -0.100), (51.507, -0.075), (51.500, -0.050), (51.490, -0.020),
-    (51.503, -0.005), (51.487, 0.005), (51.492, 0.025), (51.496, 0.040),
-    (51.494, 0.070), (51.505, 0.100),
-]
+# Approximate courses of the main waterways through Greater London, used only
+# for orientation on the tile-free offline basemap (they are hand-traced, not
+# surveyed). Each is a list of (latitude, longitude) points west/north to east.
+_WATERWAYS: dict[str, list[tuple[float, float]]] = {
+    "River Thames": [
+        (51.463, -0.320), (51.485, -0.285), (51.470, -0.250), (51.465, -0.215),
+        (51.475, -0.185), (51.480, -0.160), (51.487, -0.135), (51.502, -0.122),
+        (51.508, -0.100), (51.507, -0.075), (51.500, -0.050), (51.490, -0.020),
+        (51.503, -0.005), (51.487, 0.005), (51.492, 0.025), (51.496, 0.040),
+        (51.494, 0.070), (51.505, 0.100),
+    ],
+    "River Lea": [
+        (51.610, -0.045), (51.585, -0.035), (51.560, -0.023), (51.545, -0.012),
+        (51.530, -0.005), (51.515, 0.002), (51.508, 0.008),
+    ],
+    "River Wandle": [
+        (51.462, -0.190), (51.450, -0.185), (51.435, -0.175), (51.415, -0.168),
+        (51.400, -0.165),
+    ],
+    "Regent's Canal": [
+        (51.523, -0.184), (51.533, -0.165), (51.541, -0.145), (51.535, -0.120),
+        (51.532, -0.100), (51.528, -0.075), (51.520, -0.055), (51.512, -0.038),
+    ],
+}
+
+# Where each waterway's name sits on the tile-free map (latitude, longitude),
+# chosen to stay clear of the node labels.
+_WATERWAY_LABEL_AT = {
+    "River Thames": (51.463, -0.320),
+    "River Lea": (51.610, -0.045),
+    "River Wandle": (51.400, -0.165),
+    "Regent's Canal": (51.530, -0.078),
+}
+
+# Label placement for the tile-free map: nodes that sit close together get
+# labels on different sides so the names do not overlap.
+_LABEL_POS = {
+    "HYDE-PARK": "bottom center", "CENTRAL-LDN": "bottom right",
+    "REGENTS-CANAL": "top left", "CAMDEN": "top center",
+    "CANARY-WHARF": "bottom right", "GREENWICH": "bottom center",
+    "STRATFORD": "top right", "VICTORIA-PARK": "top left",
+    "RIVER-LEA": "top right", "WALTHAMSTOW": "top center",
+    "THAMES-BARRIER": "top center", "ILFORD": "top center",
+    "LEWISHAM": "bottom center", "DULWICH": "bottom center",
+    "BRIXTON": "bottom left", "PUTNEY": "bottom center",
+    "RIVER-WANDLE": "bottom right", "WIMBLEDON": "bottom center",
+    "RICHMOND-PARK": "bottom center", "HAMPSTEAD": "top center",
+}
+
+
+def _short_name(name: str) -> str:
+    """'Regent's Canal (Little Venice)' -> \"Regent's Canal\" for map labels."""
+    return re.sub(r"\s*\(.*\)\s*$", "", str(name))
+
+
+def _offline_map(df: pd.DataFrame):
+    """Tile-free map: labelled nodes over the main waterways, no internet needed.
+
+    Plotly's map traces cannot draw text without a glyph server, so this is a
+    plain scatter with latitude/longitude axes, scaled so that a kilometre is
+    the same length north-south and east-west at London's latitude.
+    """
+    fig = go.Figure()
+    for name, pts in _WATERWAYS.items():
+        fig.add_trace(go.Scatter(
+            x=[p[1] for p in pts], y=[p[0] for p in pts], mode="lines",
+            line=dict(width=7 if name == "River Thames" else 3.5, color="#a9cde6",
+                      shape="spline", smoothing=0.6),
+            hoverinfo="skip", showlegend=False, name=name))
+        # Name the waterway away from the node that shares its name.
+        lat, lon = _WATERWAY_LABEL_AT.get(name, pts[0])
+        fig.add_annotation(x=lon, y=lat, text=name, showarrow=False,
+                           font=dict(size=10, color="#5b8db8", family="sans-serif"),
+                           xanchor="left", yanchor="bottom", xshift=4, yshift=2, opacity=0.9)
+    fig.add_trace(go.Scatter(
+        x=df["longitude"], y=df["latitude"], mode="markers+text",
+        text=[_short_name(n) for n in df["node_name"]],
+        textposition=[_LABEL_POS.get(n, "top center") for n in df["node_id"]],
+        textfont=dict(size=11, color="#2d3748", family="sans-serif"),
+        marker=dict(
+            size=12 + df["score"].clip(lower=0, upper=100) * 0.2,
+            color=df["score"], cmin=0, cmax=100,
+            colorscale=[[0, "#2ecc71"], [0.33, "#f1c40f"], [0.66, "#e67e22"], [1, "#e74c3c"]],
+            colorbar=dict(title="score", thickness=14, len=0.7),
+            line=dict(width=1.5, color="white"), opacity=0.92),
+        customdata=list(zip(df["node_id"], df["level"], df["score"].round(0), df["source"])),
+        hovertemplate="<b>%{text}</b> (%{customdata[0]})<br>risk %{customdata[2]}/100 · "
+                      "%{customdata[1]}<br>source: %{customdata[3]}<extra></extra>",
+        showlegend=False))
+    fig.add_annotation(xref="paper", yref="paper", x=0.01, y=0.01, showarrow=False,
+                       text="Offline basemap · waterways approximate · nodes are illustrative landmarks",
+                       font=dict(size=9, color="#8a94a6"), xanchor="left", yanchor="bottom")
+    lat0 = 51.5
+    fig.update_xaxes(visible=False, range=[-0.335, 0.125], fixedrange=False)
+    fig.update_yaxes(visible=False, range=[51.385, 51.625],
+                     scaleanchor="x", scaleratio=1 / math.cos(math.radians(lat0)))
+    fig.update_layout(height=560, margin=dict(l=0, r=0, t=0, b=0),
+                      plot_bgcolor="#f6f8fb", paper_bgcolor="white", hovermode="closest")
+    return fig
 
 st.set_page_config(page_title="Climate Mesh", page_icon="🌍", layout="wide")
 init_db()
@@ -92,13 +184,14 @@ def _local_hms(ts: str) -> str:
 def _scatter_map(df: pd.DataFrame, offline: bool = False):
     """Build a risk-coloured map, tolerating both old and new plotly APIs.
 
-    ``offline=True`` uses plotly's tile-free ``white-bg`` style with an
-    approximate Thames outline for orientation, so the map still works with no
-    internet at all (the street-map tiles are the only part of the dashboard
-    that ever needs a connection). Text labels are not possible without a
-    glyph source, so node names stay in the hover text and the sidebar list.
+    ``offline=True`` returns the tile-free labelled map from
+    :func:`_offline_map`, so the map works with no internet at all (the
+    street-map tiles are the only part of the dashboard that ever needs a
+    connection).
     """
-    style = "white-bg" if offline else "carto-positron-nolabels"
+    if offline:
+        return _offline_map(df)
+    style = "carto-positron-nolabels"
     common = dict(
         lat="latitude", lon="longitude", color="score", size="size",
         color_continuous_scale=["#2ecc71", "#f1c40f", "#e67e22", "#e74c3c"],
@@ -111,14 +204,6 @@ def _scatter_map(df: pd.DataFrame, offline: bool = False):
         fig = px.scatter_map(df, map_style=style, **common)
     except AttributeError:  # older plotly (mapbox)
         fig = px.scatter_mapbox(df, mapbox_style=style, **common)
-    if offline:
-        trace_cls = getattr(go, "Scattermap", None) or go.Scattermapbox
-        fig.add_trace(trace_cls(
-            lat=[p[0] for p in _THAMES], lon=[p[1] for p in _THAMES], mode="lines",
-            line=dict(width=6, color="#9ecae1"), hoverinfo="skip",
-            name="River Thames (approx.)", showlegend=False))
-        # Keep the risk markers on top of the river line.
-        fig.data = (fig.data[1], fig.data[0])
     fig.update_layout(height=560, margin=dict(l=0, r=0, t=0, b=0))
     return fig
 
@@ -207,7 +292,7 @@ with st.sidebar:
     st.divider()
     offline_map = st.checkbox("Offline basemap (no map tiles)", value=False, key="offline_map",
                               help="Tick when the Pi has no internet: the Live Map then draws the "
-                                   "20 nodes over an outline of the Thames instead of street tiles.")
+                                   "20 labelled nodes over the main waterways instead of street tiles.")
     refresh = st.checkbox("Auto-refresh (2s)", value=True, key="auto_refresh")
     st.caption("Climate Mesh · honest by design")
 
@@ -234,8 +319,8 @@ with tabs[0]:
                         key=f"live-map-{active_scenario}-{'offline' if offline_map else 'tiles'}")
         st.caption("Marker colour & size = risk score (green safe → red critical). "
                    "Hover a node to see its name and data source. Street tiles need "
-                   "internet; tick **Offline basemap** in the sidebar to draw the nodes over "
-                   "an outline of the Thames instead.")
+                   "internet; tick **Offline basemap** in the sidebar for a labelled map over "
+                   "the main waterways that needs no connection.")
     else:
         st.info("Map appears once the engine is running.")
 

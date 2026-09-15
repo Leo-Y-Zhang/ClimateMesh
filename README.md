@@ -497,8 +497,8 @@ never confused. See [docs/evidence_checklist.md](docs/evidence_checklist.md).
 - **Map doesn't render** → the bundled Streamlit/Plotly versions use free
   OpenStreetMap-based tiles (no API key). Ensure `pip install -r requirements.txt`
   completed. The street tiles are the one thing that needs internet: tick
-  **Offline basemap** in the sidebar and the Live Map draws the 20 nodes over
-  an outline of the Thames instead, fully offline.
+  **Offline basemap** in the sidebar and the Live Map draws the 20 labelled
+  nodes over the Thames, Lea, Wandle and Regent's Canal instead, fully offline.
 - **`pytest: command not found`** → use `python -m pytest`.
 - **Reset everything** → `python scripts/reset_demo_db.py`.
 

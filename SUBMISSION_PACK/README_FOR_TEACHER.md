@@ -16,6 +16,7 @@ the working project itself (code, tests, documentation, screenshots).
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
 | `figures/` | The cropped dashboard figures used in the write-up. |
 | `photos/` | The team's real-world photos of the Pi (see the README inside). |
+| `_build/` | Tooling that regenerates the Word and PDF files from `WRITEUP.md` (stylesheet, Word template, script). Not needed for submission; editing the Word file directly is fine. |
 
 The full set of dashboard screenshots and terminal evidence is in
 `../docs/screenshots/`.
