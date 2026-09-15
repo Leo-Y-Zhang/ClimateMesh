@@ -33,6 +33,34 @@ jobs:
       - name: Test (pytest)
         run: python -m pytest -q
 
+  # Real 64-bit Arm Linux (GitHub's free Arm runners for public repositories).
+  # Proves the two claims the Raspberry Pi section of the write-up makes:
+  # every dependency installs from a prebuilt aarch64 wheel (--only-binary
+  # refuses to compile anything), and the whole suite passes on Arm. The
+  # benchmark at the end is a real Arm measurement; these are server-class
+  # Neoverse cores, so a Pi 5 is slower than this, never faster.
+  arm64:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"   # what Raspberry Pi OS Bookworm ships
+      - name: Machine
+        run: |
+          uname -m
+          nproc
+          lscpu | sed -n '1,25p' || true
+      - name: Install (prebuilt wheels only, nothing compiled)
+        run: |
+          python -m pip install --upgrade pip
+          pip install --only-binary=:all: -r requirements.txt
+      - name: Test (pytest)
+        run: python -m pytest -q
+      - name: Benchmark (scripts/pi_benchmark.py)
+        run: python scripts/pi_benchmark.py --with-tests
+
   # The gitleaks binary directly rather than gitleaks-action, and the whole
   # history rather than a diff. The action scans only the range
   # <before>^..<after> that a push touched, so a secret committed earlier and
