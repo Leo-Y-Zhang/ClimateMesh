@@ -211,7 +211,9 @@ with tabs[1]:
     if not merged.empty:
         avg_risk = risks_df["score"].mean()
         highest = risks_df.iloc[0]
-        active_alerts = len([a for a in alerts if a["severity"] in ("warning", "critical")])
+        # "Active" = nodes currently at WARNING or CRITICAL, not a count of the
+        # alert log (which grows every cooldown window while a scenario runs).
+        active_alerts = int(risks_df["level"].isin(["WARNING", "CRITICAL"]).sum())
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Average risk", f"{avg_risk:.1f}/100")
         m2.metric("Highest-risk node", highest["node_id"], f"{highest['score']:.0f}/100")
@@ -301,7 +303,8 @@ with tabs[2]:
                     "Air quality": r["aqi_sub"], "Water level": r["water_sub"],
                     "Wind": r["wind_sub"], "Pressure": r["pressure_sub"]}
             sub_fig = px.bar(x=list(subs.keys()), y=list(subs.values()),
-                             range_y=[0, 100], title="Risk breakdown by factor (0–100)")
+                             range_y=[0, 100], title="Risk breakdown by factor (0–100)",
+                             labels={"x": "Factor", "y": "Sub-score (0–100)"})
             sub_fig.update_layout(height=280, margin=dict(t=40, b=10))
             st.plotly_chart(sub_fig, use_container_width=True)
 

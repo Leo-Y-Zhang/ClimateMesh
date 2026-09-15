@@ -6,6 +6,11 @@ demo / API / hardware) so judges always know what is real. To date, all evidence
 is produced with simulation or live-API data — physical sensors are not yet
 connected.
 
+> A reference set captured from this exact tree (dashboard tabs in demo /
+> flood, plus terminal output of every command below) lives in
+> `docs/screenshots/`. Retake anything you want on the Pi itself; the Live
+> Map tab needs internet for its base-map tiles.
+
 ## 0. Before you start
 - [ ] `cd` into the repo and activate the Python environment.
 - [ ] Reset to a clean, deterministic state: `python scripts/reset_demo_db.py`

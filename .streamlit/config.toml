@@ -11,6 +11,10 @@ address = "127.0.0.1"
 headless = true
 
 [client]
+# Hide the Streamlit Cloud "Deploy" button and developer menu items: this is a
+# local dashboard, and the toolbar only clutters judges' screenshots.
+toolbarMode = "viewer"
+
 # Show a generic error message in the browser; exception types, messages and
 # tracebacks go to the console log instead.
 #

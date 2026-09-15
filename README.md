@@ -262,7 +262,30 @@ clock so each scenario shows the same deterministic frame; it does not lock the
 picker). In `simulation` mode, `--judge-mode` switches to the same seeded
 generator as `demo`, so "screenshot-stable" is exactly what you get.
 
-## Screenshots to capture
+## Screenshots
+
+Captured from this exact tree in **demo / judge mode** (flood scenario unless
+stated). Every panel self-labels its data source — here **🎬 Digital Twin
+(Demo)** — so nothing is passed off as a real measurement. The full set,
+including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
+
+| | |
+|---|---|
+| **Network Overview** — fleet risk, highest node, active alerts, risk-by-node and distribution charts | **Node Detail** — Regent's Canal: readings, provenance badges, the plain-English *Why:* line and the six sub-scores |
+| ![Network Overview, flood, demo data](docs/screenshots/network-overview-flood-demo.png) | ![Node Detail, flood, demo data](docs/screenshots/node-detail-flood-demo.png) |
+| **AI Explainability** — which nodes the Isolation Forest flagged and why | **Hardware Readiness** — honest "no physical sensor detected" state |
+| ![AI Explainability, flood, demo data](docs/screenshots/ai-explainability-flood-demo.png) | ![Hardware Readiness, demo data](docs/screenshots/hardware-readiness-flood-demo.png) |
+| **Evidence & Validation** — run metadata, row counts, export commands | **Competition Pitch** |
+| ![Evidence and Validation, demo data](docs/screenshots/evidence-validation-flood-demo.png) | ![Competition Pitch](docs/screenshots/competition-pitch-flood-demo.png) |
+| **Network Overview after clicking *Heatwave* in the sidebar** — live scenario switching | **`python scripts/judge_validate.py`** — the one-command PASS table |
+| ![Network Overview, heatwave, demo data](docs/screenshots/network-overview-heatwave-demo.png) | ![judge_validate.py terminal output](docs/screenshots/terminal-judge_validate.png) |
+
+Terminal evidence for `demo_tour.py`, `pytest`, `smoke_test.py` and
+`test_hardware_read.py` (FALLBACK SIMULATION, no sensor attached) is in the
+same folder. The Live Map tab is not shown here only because its base-map
+tiles need internet; the nodes and colours render identically over the map.
+
+### Screenshots to capture
 
 The dashboard's 7 tabs are all screenshot-worthy — see
 [docs/evidence_checklist.md](docs/evidence_checklist.md). In short:
