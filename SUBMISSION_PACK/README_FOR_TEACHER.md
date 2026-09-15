@@ -11,7 +11,7 @@ the working project itself (code, tests, documentation, screenshots).
 | File | What it is |
 |---|---|
 | `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 3,000 words of body text (excluding tables, captions and the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first (and the words "its full output is reproduced in the Appendix" in §6), then the ablation table in §6 with the two sentences under it, then the worked examples at the end of §3 (and the "see the Hyde Park example above" clause in the Figure 3 caption). Keep §12 (the declaration of help) whatever else goes. |
-| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (12 pages; the last is the demo tour's full output), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
+| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (about 12 pages; the last holds the demo tour's full output), for reading or printing. The command below rebuilds it; only fall back to Word's File → Save As → PDF if that tooling is not installed, accepting a different layout. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
 | `figures/` | The cropped dashboard figures used in the write-up. |
@@ -30,16 +30,19 @@ the team can take. Search the Word file for "►".
    The quickest way to replace them, straight from the phone files:
 
    ```bash
+   pip install -r SUBMISSION_PACK/_build/requirements-build.txt   # once
+   playwright install chromium                                    # once, ~130 MB
    python SUBMISSION_PACK/_build/add_photos.py --pi PI.jpg --team TEAM.jpg
    ```
 
-   That strips the photos' metadata (phone photos carry GPS coordinates),
-   resizes them, writes the real captions and rebuilds `WRITEUP.docx` and
-   `WRITEUP.pdf`, so nothing needs doing by hand. Either photo can be given
-   on its own. By hand instead: copy the photos into `photos/` under the
-   names in the README there, then open `WRITEUP.docx`, right-click each grey
-   box → *Change Picture*, and replace the caption with the wording printed
-   inside the box. Do not submit while a grey box is there.
+   That rotates, resizes and strips each photo's metadata (phone photos carry
+   GPS coordinates, the device model and a timestamp), writes the real
+   captions, sizes the pictures to the page and rebuilds `WRITEUP.docx` and
+   `WRITEUP.pdf`, so nothing needs doing by hand. Either photo can be given on
+   its own, and iPhone `.HEIC` files are handled. Do the photos **before** any
+   editing in Word: the command regenerates the Word file from `WRITEUP.md`
+   (it copies anything newer to `WRITEUP.docx.bak` first). By hand instead:
+   see `photos/README.md`. Do not submit while a grey box is there.
 2. **§9, Figure 6**: the team photo, handled by the same command (or the
    same manual steps) as Figure 1.
 
@@ -52,9 +55,11 @@ labelled bound for the Pi itself, and §12's declaration of help is complete. If
 `python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
 that bound.
 
-School and teacher details go only where the entry form itself requires them.
-Nothing in this pack names the school or any adult, deliberately. After
-editing, save the Word file and re-export the PDF (File → Save As → PDF).
+School and teacher details go only where the entry form itself requires
+them. Nothing in this pack names the school or any adult, deliberately. After
+editing the Markdown, re-run `python SUBMISSION_PACK/_build/build_writeup.py`
+to regenerate both files; after editing the Word file directly, re-export the
+PDF from Word (File → Save As → PDF).
 
 ## Ten-minute verification (optional, any computer)
 

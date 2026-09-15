@@ -1,0 +1,12 @@
+# Only needed to regenerate WRITEUP.docx / WRITEUP.pdf from WRITEUP.md, or to
+# run add_photos.py. Nothing here is needed to run Climate Mesh itself.
+#
+#   pip install -r SUBMISSION_PACK/_build/requirements-build.txt
+#   playwright install chromium      # once, about 130 MB, for the PDF
+#
+pillow>=10.0            # photo handling (also arrives with streamlit)
+pillow-heif>=0.16       # read iPhone .HEIC photos
+pypandoc_binary>=1.13   # Markdown -> Word (bundles pandoc)
+python-docx>=1.1        # pins the Word file to A4
+playwright>=1.40        # drives Chromium for the PDF
+pymupdf>=1.24           # merges the cover page into the PDF

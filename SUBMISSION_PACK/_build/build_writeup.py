@@ -1,6 +1,6 @@
 """Rebuild WRITEUP.docx and WRITEUP.pdf from WRITEUP.md.
 
-Needs: pip install pypandoc_binary python-docx playwright pymupdf   (and a Chromium for
+Needs the packages in _build/requirements-build.txt (and a Chromium for
 Playwright: `playwright install chromium`, or set CHROMIUM to an existing
 binary). Run from anywhere:
 
@@ -43,6 +43,19 @@ def build_docx() -> None:
 def build_pdf() -> None:
     from playwright.sync_api import sync_playwright
     html = HERE / "WRITEUP.html"
+    cover = HERE / "_cover.pdf"
+    body = HERE / "_body.pdf"
+    try:
+        _build_pdf(html, cover, body)
+    finally:
+        # A failed run must not leave a 1 MB HTML file in the folder the
+        # teacher zips up.
+        for scratch in (html, cover, body):
+            scratch.unlink(missing_ok=True)
+
+
+def _build_pdf(html: Path, cover: Path, body: Path) -> None:
+    from playwright.sync_api import sync_playwright
     pypandoc.convert_file(str(MD), "html5", outputfile=str(html),
                           extra_args=["--standalone", "--embed-resources",
                                       f"--resource-path={PACK}:{PACK.parent}",
@@ -58,8 +71,6 @@ def build_pdf() -> None:
         common = dict(format="A4", prefer_css_page_size=True, print_background=True,
                       header_template="<div></div>", footer_template=FOOTER)
         # The cover carries no running footer; every other page does.
-        cover = HERE / "_cover.pdf"
-        body = HERE / "_body.pdf"
         pg.pdf(path=str(cover), page_ranges="1", display_header_footer=False, **common)
         pg.pdf(path=str(body), page_ranges="2-", display_header_footer=True, **common)
         b.close()
@@ -70,9 +81,6 @@ def build_pdf() -> None:
             out.insert_pdf(src)
     out.save(str(PACK / "WRITEUP.pdf"), garbage=3, deflate=True)
     out.close()
-    cover.unlink(missing_ok=True)
-    body.unlink(missing_ok=True)
-    html.unlink(missing_ok=True)
 
 
 def render_pages(out_dir: Path) -> int:
