@@ -147,5 +147,5 @@ def test_hardware_reading_scores_like_any_other(stand_in):
     results = {x["node_id"]: x for x in compute_all(readings, detector)}
     assert set(results) == set(NODES_BY_ID)
     hw = results[NODE]
-    assert 0 <= hw["risk_score"] <= 100
+    assert 0 <= hw["score"] <= 100
     assert hw["level"] in {"SAFE", "MODERATE", "WARNING", "CRITICAL"}
