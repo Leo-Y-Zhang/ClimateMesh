@@ -46,9 +46,13 @@ not field measurements; no physical sensor has been validated yet)*:
 > **simulated** and/or **live API** data. Every reading shows its source
 > (`simulation` / `demo` / `api` / `hardware`) so nothing is ever overstated.
 
-Built by **two sixth-form students** (years 12–13 category) for the PA
-Raspberry Pi Competition 2026/27 — theme *Building a Positive Human Future*
-(Safer Societies & Sustainable World).
+Built by **Luis Yu and Leo Zhang**, two sixth-form students (years 12–13
+category), for the PA Raspberry Pi Competition 2026/27 — theme *Building a
+Positive Human Future* (Safer Societies & Sustainable World).
+
+> **Submitting this project?** Everything a teacher needs — the written entry,
+> entry-form answers and where the photos go — is in
+> [`SUBMISSION_PACK/`](SUBMISSION_PACK/README_FOR_TEACHER.md).
 
 ---
 
@@ -372,7 +376,8 @@ ClimateMesh/
     run_validation.py        # one-command pass/fail validation
     smoke_test.py            # fast end-to-end check
   tests/                     # pytest suite
-  docs/                      # hardware driver setup, integration plan, evidence checklist
+  docs/                      # hardware driver setup, integration plan, evidence checklist, screenshots
+  SUBMISSION_PACK/           # competition write-up (.md/.docx), entry-form answers, photos
 ```
 
 ## Known limitations (honest by design)
@@ -533,7 +538,7 @@ sections above with evidence:
 
 ## Credits
 
-Built by **two sixth-form students**.
+Built by **Luis Yu and Leo Zhang**, two sixth-form students.
 
 ## Licence
 
