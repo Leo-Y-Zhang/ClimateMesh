@@ -74,6 +74,28 @@ five scenarios in a few seconds. Both work with no internet and no
 sensors. To see the dashboard, run the two
 commands at the end of the main `README.md`.
 
+## What this zip says about you
+
+The only personal information anywhere in it is the two names on the cover.
+Checked before packaging:
+
+- No school, teacher, email address, username or handle appears in any file,
+  and no machine name or file path from any computer used to build it.
+- The Word file's properties carry only the title and the two names. The
+  PDF's metadata fields are empty.
+- Every image ships with its metadata stripped. Phone photos normally carry
+  GPS coordinates, the device model and a timestamp;
+  `_build/add_photos.py` removes all of that when it puts the team's photos
+  in, and the screenshots were generated with none.
+- The project stores no personal data at all: no accounts, no cameras, no
+  microphones, no location tracking. Its only outbound call is to the free
+  Open-Meteo weather service, which needs no key and no account.
+- The dashboard has no login, so it listens on `127.0.0.1` only and is never
+  put on a school network; watch it from another computer over an SSH tunnel
+  (the main `README.md` gives the command).
+
+School and teacher details belong on the entry form and nowhere else.
+
 ## Honesty note
 
 The project is explicit that no physical sensor has yet been validated and
