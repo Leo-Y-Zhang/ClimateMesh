@@ -10,8 +10,8 @@ the working project itself (code, tests, documentation, screenshots).
 
 | File | What it is |
 |---|---|
-| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 2,300 words (excluding the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first, then §12, then the ablation table in §6. |
-| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (10 pages), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
+| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 2,300 words (excluding the ► boxes) with seven figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first, then §12, then the ablation table in §6. |
+| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (11 pages), for reading or printing. Regenerate it from the Word file (File → Save As → PDF) after editing. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
 | `figures/` | The cropped dashboard figures used in the write-up. |
@@ -33,8 +33,10 @@ truthfully, plus one optional one. Search the Word file for "►".
    version. Do not submit while the grey box is there.
 2. **§1, the personal reason** for choosing this project (one or two
    sentences, in the students' words).
-3. **§9, Teamwork**: who did what, in the first person; add
-   `photos/photo-2-team.jpg` there.
+3. **§9, Teamwork**: the section is written; confirm the one bracketed
+   sentence (when you started, who took which parts) and replace the grey
+   Figure 7 placeholder with `photos/photo-2-team.jpg` inside the Word file,
+   as for Figure 1.
 4. **§12, help received**: one line on any teacher or mentor input (the
    AI-assistance declaration is already written).
 5. *Optional:* **§7**: run `python scripts/pi_benchmark.py` on the Pi and

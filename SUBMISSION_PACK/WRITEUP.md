@@ -263,21 +263,37 @@ early-warning mesh.
 
 ## 9. Teamwork and what we learned
 
-We are a team of two, Luis Yu and Leo Zhang.
+We are a team of two, Luis Yu and Leo Zhang. ► *[One sentence on when you
+started and roughly how many hours a week; one sentence each on who took
+which parts. Edit the paragraph below to match; nothing else in this section
+needs changing.]*
 
-> ► **Write this section yourselves, in the first person, about 250 words,
-> then delete this box.** Answer these five questions and drop any that do
-> not apply. (1) *Timeline*: when did you start, roughly how many hours a
-> week, and what was the first thing that actually worked? (2) *Who did
-> what*: two or three sentences each, honestly; your git history is the
-> evidence, so match it. (3) *The worst week*: one specific thing that broke,
-> or one decision you disagreed about (for example whether to fake a sensor
-> reading for the demo), and how you settled it. (4) *What each of you is
-> proudest of* that the other could not have done. (5) *What you would tell a
-> Year 10 team* starting a project like this. Then add `photos/photo-2-team.jpg`
-> here as a figure with the caption "Luis and Leo testing the flood scenario
-> on the Pi." Judges read this section closely; a plain, specific story beats
-> a polished one.
+The first thing that worked was the simulator: twenty nodes with a daily
+cycle and some noise, and a risk score that went red when we typed in a
+flood. That took an afternoon and felt like most of the project. It was not.
+Almost everything after it was about trust: deciding what the system is
+allowed to claim. We argued about whether the demo could show a "sensor"
+reading for a sensor we did not have, and decided it could not. That decision
+is now enforced in code: a node can only be labelled `hardware` after a real
+device opens, and a badge saying "Physical Sensor" can only appear when a
+reading actually came from one. It cost us the easy screenshot and gave us the
+project's spine.
+
+The worst week was the one where we made the demo deterministic. Every
+screenshot and every number in this document had to be reproducible by a
+stranger, which meant fixed seeds, a frozen clock in judge mode, and tests
+that pin the published figures. We broke the numbers several times while
+"improving" the risk engine, and each time a test told us before a judge
+could. We also learned to test the dashboard itself, not just the maths: an
+automated run of all seven tabs found that one tab crashed whenever real data
+was present, which we had never noticed because we always looked at the first
+few tabs.
+
+If we were starting again, or advising a Year 10 team: build the honest
+version first, make one command that proves it works, and only then make it
+look good.
+
+![Figure 7 — ► PLACEHOLDER: replace photos/photo-2-team.jpg with a photo of the two of you at the Pi, and change the picture in WRITEUP.docx. Caption to use: "Luis and Leo testing the flood scenario on the Pi."](photos/photo-2-team.jpg)
 
 **What was hardest.** Making an honest system is harder than making an
 impressive one. Deciding that a reading may only be called "hardware" after a
