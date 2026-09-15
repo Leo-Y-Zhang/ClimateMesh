@@ -37,6 +37,16 @@ from simulation.scenarios import SCENARIO_INFO, SCENARIOS
 
 DEMO_CONTROL_PATH = Path(__file__).parent.parent / "data" / "demo_control.json"
 
+# Approximate course of the Thames through Greater London (west to east), used
+# only as an orientation line on the tile-free offline basemap.
+_THAMES = [
+    (51.463, -0.320), (51.485, -0.285), (51.470, -0.250), (51.465, -0.215),
+    (51.475, -0.185), (51.480, -0.160), (51.487, -0.135), (51.502, -0.122),
+    (51.508, -0.100), (51.507, -0.075), (51.500, -0.050), (51.490, -0.020),
+    (51.503, -0.005), (51.487, 0.005), (51.492, 0.025), (51.496, 0.040),
+    (51.494, 0.070), (51.505, 0.100),
+]
+
 st.set_page_config(page_title="Climate Mesh", page_icon="🌍", layout="wide")
 init_db()
 
@@ -79,8 +89,16 @@ def _local_hms(ts: str) -> str:
         return str(ts)
 
 
-def _scatter_map(df: pd.DataFrame):
-    """Build a risk-coloured map, tolerating both old and new plotly APIs."""
+def _scatter_map(df: pd.DataFrame, offline: bool = False):
+    """Build a risk-coloured map, tolerating both old and new plotly APIs.
+
+    ``offline=True`` uses plotly's tile-free ``white-bg`` style with an
+    approximate Thames outline for orientation, so the map still works with no
+    internet at all (the street-map tiles are the only part of the dashboard
+    that ever needs a connection). Text labels are not possible without a
+    glyph source, so node names stay in the hover text and the sidebar list.
+    """
+    style = "white-bg" if offline else "carto-positron-nolabels"
     common = dict(
         lat="latitude", lon="longitude", color="score", size="size",
         color_continuous_scale=["#2ecc71", "#f1c40f", "#e67e22", "#e74c3c"],
@@ -90,10 +108,18 @@ def _scatter_map(df: pd.DataFrame):
                     "source": True, "latitude": False, "longitude": False, "size": False},
     )
     try:  # plotly >= 5.24 (maplibre)
-        fig = px.scatter_map(df, map_style="carto-positron-nolabels", **common)
+        fig = px.scatter_map(df, map_style=style, **common)
     except AttributeError:  # older plotly (mapbox)
-        fig = px.scatter_mapbox(df, mapbox_style="carto-positron-nolabels", **common)
-    fig.update_layout(height=520, margin=dict(l=0, r=0, t=0, b=0))
+        fig = px.scatter_mapbox(df, mapbox_style=style, **common)
+    if offline:
+        trace_cls = getattr(go, "Scattermap", None) or go.Scattermapbox
+        fig.add_trace(trace_cls(
+            lat=[p[0] for p in _THAMES], lon=[p[1] for p in _THAMES], mode="lines",
+            line=dict(width=6, color="#9ecae1"), hoverinfo="skip",
+            name="River Thames (approx.)", showlegend=False))
+        # Keep the risk markers on top of the river line.
+        fig.data = (fig.data[1], fig.data[0])
+    fig.update_layout(height=560, margin=dict(l=0, r=0, t=0, b=0))
     return fig
 
 
@@ -179,6 +205,9 @@ with st.sidebar:
     else:
         st.info("Waiting for data…")
     st.divider()
+    offline_map = st.checkbox("Offline basemap (no map tiles)", value=False, key="offline_map",
+                              help="Tick when the Pi has no internet: the Live Map then draws the "
+                                   "20 nodes over an outline of the Thames instead of street tiles.")
     refresh = st.checkbox("Auto-refresh (2s)", value=True, key="auto_refresh")
     st.caption("Climate Mesh · honest by design")
 
@@ -198,11 +227,15 @@ with tabs[0]:
         st.markdown("**Provenance of mapped nodes:** "
                     + sources_legend_html(sorted(merged["source"].unique())),
                     unsafe_allow_html=True)
-        st.plotly_chart(_scatter_map(merged), use_container_width=True)
+        # A key that changes with the scenario/basemap remounts the chart, so the
+        # WebGL map is drawn fresh instead of patched in place (an in-place
+        # update after a scenario switch can leave the map canvas blank).
+        st.plotly_chart(_scatter_map(merged, offline=offline_map), use_container_width=True,
+                        key=f"live-map-{active_scenario}-{'offline' if offline_map else 'tiles'}")
         st.caption("Marker colour & size = risk score (green safe → red critical). "
-                   "Hover a node to see its data source. The base-map tiles are the "
-                   "one thing that needs internet — with no connection the nodes and "
-                   "their colours still render on a blank background.")
+                   "Hover a node to see its name and data source. Street tiles need "
+                   "internet; tick **Offline basemap** in the sidebar to draw the nodes over "
+                   "an outline of the Thames instead.")
     else:
         st.info("Map appears once the engine is running.")
 

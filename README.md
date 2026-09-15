@@ -271,6 +271,8 @@ including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
 
 | | |
 |---|---|
+| **Live Map (flood)** — the 20 nodes coloured and sized by risk, here on the tile-free **Offline basemap** (Thames outline for orientation) | **Live Map (heatwave)** — after clicking *Heatwave* in the sidebar: the urban nodes light up instead of the river nodes |
+| ![Live Map, flood, demo data, offline basemap](docs/screenshots/live-map-flood-demo.png) | ![Live Map, heatwave, demo data, offline basemap](docs/screenshots/live-map-heatwave-demo.png) |
 | **Network Overview** — fleet risk, highest node, active alerts, risk-by-node and distribution charts | **Node Detail** — Regent's Canal: readings, provenance badges, the plain-English *Why:* line and the six sub-scores |
 | ![Network Overview, flood, demo data](docs/screenshots/network-overview-flood-demo.png) | ![Node Detail, flood, demo data](docs/screenshots/node-detail-flood-demo.png) |
 | **AI Explainability** — which nodes the Isolation Forest flagged and why | **Hardware Readiness** — honest "no physical sensor detected" state |
@@ -282,8 +284,8 @@ including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
 
 Terminal evidence for `demo_tour.py`, `pytest`, `smoke_test.py` and
 `test_hardware_read.py` (FALLBACK SIMULATION, no sensor attached) is in the
-same folder. The Live Map tab is not shown here only because its base-map
-tiles need internet; the nodes and colours render identically over the map.
+same folder. With internet, untick **Offline basemap** and the same nodes sit
+on a street map.
 
 ### Screenshots to capture
 
@@ -488,8 +490,9 @@ never confused. See [docs/evidence_checklist.md](docs/evidence_checklist.md).
   simulation. This is expected and clearly labelled.
 - **Map doesn't render** → the bundled Streamlit/Plotly versions use free
   OpenStreetMap-based tiles (no API key). Ensure `pip install -r requirements.txt`
-  completed. The base-map tiles are the one thing that needs internet: fully
-  offline, the 20 nodes and their risk colours still draw, on a blank background.
+  completed. The street tiles are the one thing that needs internet: tick
+  **Offline basemap** in the sidebar and the Live Map draws the 20 nodes over
+  an outline of the Thames instead, fully offline.
 - **`pytest: command not found`** → use `python -m pytest`.
 - **Reset everything** → `python scripts/reset_demo_db.py`.
 

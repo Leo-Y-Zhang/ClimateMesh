@@ -28,6 +28,7 @@ def _render():
 
     at = AppTest.from_file(str(APP), default_timeout=120)
     at.session_state["auto_refresh"] = False  # otherwise the page reruns forever
+    at.session_state["offline_map"] = True    # tile-free map, like a Pi with no internet
     at.run()
     return at
 

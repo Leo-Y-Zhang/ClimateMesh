@@ -9,7 +9,8 @@ connected.
 > A reference set captured from this exact tree (dashboard tabs in demo /
 > flood, plus terminal output of every command below) lives in
 > `docs/screenshots/`. Retake anything you want on the Pi itself; the Live
-> Map tab needs internet for its base-map tiles.
+> Map shots use the sidebar's **Offline basemap** option, which needs no
+> internet (untick it for street tiles when online).
 
 ## 0. Before you start
 - [ ] `cd` into the repo and activate the Python environment.
