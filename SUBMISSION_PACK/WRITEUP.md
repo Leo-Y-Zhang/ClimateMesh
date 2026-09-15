@@ -70,11 +70,16 @@ the data and flags readings that are easy to isolate (a bit like spotting the
 odd one out in a crowd: a reading that can be separated from all the others in
 a few cuts is unusual), so an unusual *combination* of values is caught while
 each channel is still only moderately elevated. A confirmed anomaly multiplies
-the node's graded risk by up to 1.5×, and the model reports which channels
-deviate most from the learned baseline, so every alert says *why*.
-Deliberately, the AI can amplify risk but never create it: 1.5× a SAFE score
-of 5 is still SAFE, so even the roughly 5 % of ordinary readings an Isolation
-Forest is expected to mis-flag cannot turn a SAFE node into an alert. Offline
+the node's graded risk by up to 1.5× (measured range 1.25× to 1.36×), and the
+model reports which channels deviate most from the learned baseline, so every
+alert says *why*.
+Deliberately, the AI can amplify risk but never create it, and the bound is
+arithmetic rather than anecdote: the AI and mesh multipliers compose to at
+most 1.5 × 1.2 = 1.8, so a node whose own sub-scores are below 33.4/100 can
+never reach WARNING and one below 44.5 can never reach CRITICAL, whatever the
+two layers say. Measured over 80,000 synthetic readings the AI multiplier
+actually lands between 1.25× and 1.36× against that 1.5 design ceiling. A test
+sweeps the whole range and fails if the bound is ever exceeded. Offline
 it trains on 2,000 deterministic synthetic samples; when online it can instead
 train on about 30 days of real hourly ERA5 weather and air quality for a
 representative central-London point from the Open-Meteo archive (cached after
@@ -82,10 +87,21 @@ the first fetch), and it records which path it used. Every number in this
 write-up was produced with the synthetic path; training on the archive is a
 one-flag change (`--ai-training historical`).
 
-**Neighbours have to agree.** Two nodes within 6 km are neighbours. The 1.2×
-mesh multiplier fires only when a node *and* at least two of its neighbours
-are elevated for the *same* hazard. A single glitching sensor cannot cry wolf;
-a correlated regional event is escalated. A worked example from the flood
+**Neighbours have to agree, both ways.** Two nodes within 6 km are
+neighbours, and agreement cuts in both directions. A node whose neighbours see
+the same hazard is escalated (1.2×). A node that is elevated while *none* of
+its neighbours sees anything is damped instead (0.75×) and is not reported as
+the hazard at all: it raises a *sensor-check* alert telling the site team to
+go and look at that node, because one instrument disagreeing with four
+neighbours is far more likely to be broken than to be right. That is the
+difference between a claim and a mechanism: drop a stuck water-level sensor
+reading 9 m into an otherwise calm mesh and the old rule gave CRITICAL 100/100
+and a flood playbook; the rule as built gives 75/100 and "check the sensor at
+Regent's Canal ... none of its 4 neighbours within 6 km sees the same thing".
+Make two of those neighbours agree and the same reading becomes a CRITICAL
+flood alert. A node with fewer than two neighbours in range cannot be
+corroborated either way, so it is left alone and the dashboard says so rather
+than pretending. A worked example from the flood
 frame: Hyde Park's own sub-scores give a base of 58.0 (MODERATE). Four of its
 neighbours are elevated for the same flood hazard, so the mesh multiplier
 applies: 58.0 × 1.2 = 69.6, WARNING, and an alert is raised. Regent's Canal,
@@ -114,11 +130,15 @@ flag, plus a table of how many readings came from each source.
 
 Not any single part, but the combination:
 
-- **Neighbours as a trust signal.** A cheap node's risk is escalated only when
-  it and at least two neighbours within 6 km are elevated for the same hazard,
-  so a network of £85 nodes is harder to fool than one expensive sensor.
-- **A bounded, explainable AI layer.** The Isolation Forest names the channels
-  responsible and can only amplify graded risk (up to 1.5×), never create it.
+- **Neighbours as a two-sided trust signal.** Agreement escalates a cheap
+  node (1.2×) and *disagreement damps it* (0.75×): a node alone in seeing a
+  hazard is reported as a sensor to check, not as the hazard, so a network of
+  £85 nodes is harder to fool than one expensive sensor. We test both
+  directions, including the case where the mesh must refuse to escalate.
+- **A bounded, explainable AI layer.** The Isolation Forest names the
+  channels responsible and can only amplify graded risk, never create it. The
+  two layers compose to at most 1.8×, so nothing below 33.4/100 on its own
+  sub-scores can be pushed to an alert.
 - **Provenance enforced in code, not by convention.** Every reading, panel,
   alert and exported row carries its source and quality flag; `is_simulated`
   is derived from `source` so the two can never disagree; a reading with an
@@ -165,24 +185,35 @@ We label exactly what this is and is not.
 - The flood, heatwave, smog and storm scenarios are simulated so that judging
   never depends on a real emergency. In `api` and `hardware` modes live values
   are shown unmodified.
+- One node (Ilford) has a single neighbour inside the 6 km radius, so the
+  corroboration layer can never fire for it in either direction. The engine
+  marks it `unavailable` rather than silently treating it as agreement, and
+  the dashboard says "cannot be corroborated" next to its score.
 - The AI is decision support for a community, not an accredited warning
   system. Alerts always defer to official guidance.
 
 ## 6. Evidence that it works
 
-- **180 automated tests pass** on Python 3.11, 3.12 and 3.13, including a test
+- **189 automated tests pass** on Python 3.11, 3.12 and 3.13, including a test
   that executes all seven dashboard tabs in Streamlit's headless test harness
   and tests that pin the exact numbers quoted below. Continuous integration
   runs the suite on every push to `main` and every pull request, on x86-64
   (Python 3.11 and 3.13) and on a 64-bit Arm Linux runner (Python 3.11), the
   Pi's architecture; 3.12 was checked by hand.
-- `python scripts/judge_validate.py` runs the smoke test, all 180 tests, a
+- `python scripts/judge_validate.py` runs the smoke test, all 189 tests, a
   normal and a flood demo cycle and the evidence export → **PASS (5/5 steps
   passed)**. Its full output is `docs/screenshots/terminal-judge_validate.png`
   in the repository.
 - `python scripts/demo_tour.py` runs one deterministic cycle of all five
   scenarios in a few seconds. Repeated runs print identical numbers;
   its full output is reproduced in the Appendix.
+- **The mesh claim, tested rather than asserted.** Injecting one stuck
+  water-level sensor (9 m) into an otherwise calm mesh produces **0 flood
+  alerts and 1 sensor-check**, at 75/100 rather than 100/100. Making two of
+  that node's neighbours report the same thing turns the identical reading
+  into a CRITICAL flood alert. Six tests in
+  `tests/test_corroboration.py` pin both directions, including the node that
+  cannot be corroborated at all.
 
 ::: {.keep .tbl-tour}
 The demo tour, one row per scenario:
@@ -238,8 +269,16 @@ the same time, headless, at the site.
 A community node therefore costs less than a hundred pounds before sensors;
 the software costs nothing and needs no subscription. Our own Pi 5 and sensor
 came free in the competition's starter kit, so those are replacement prices
-for anyone else building a node, not what we spent: the barrier to a school
-copying this is a spare afternoon, not a budget.
+for anyone else building a node, not what we spent.
+
+Twenty of those would be £1,700, which is not what we are proposing. The
+deployment shape is one Pi 5 as the hub — engine, model, database and
+dashboard — with leaf nodes that only read their channels and post the same
+canonical reading over Wi-Fi, which a £12 Pico W or ESP32 can do. A realistic
+school deployment is one hub and four leaves with basic sensors: about £150,
+or roughly £85 plus £15 a node after that. The canonical reading is what makes
+that substitution free: anything that can emit the eight channels with a
+source and a quality flag is a node, whatever it runs on.
 
 **Speed.** The per-cycle cost is small: the 20 nodes are scored by the
 Isolation Forest in one batch rather than one at a time, which cut a full
@@ -250,7 +289,7 @@ the final review (four cores, 16 GB, Python 3.11), where the model trains in
 **On Arm.** The same suite and benchmark run in our continuous integration on
 a real 64-bit Arm Linux machine (GitHub's Arm runner: four Neoverse-N2 cores,
 16 GB, Python 3.11 as the Bookworm release of Raspberry Pi OS ships). Every dependency installed from
-a prebuilt Arm wheel with compilation forbidden, all 180 tests passed in 9 s,
+a prebuilt Arm wheel with compilation forbidden, the whole suite passed,
 the model trained in 0.1 s, a full 20-node cycle took 13 ms and the engine
 peaked at 199 MB.
 
@@ -302,7 +341,7 @@ early-warning mesh.
 We are a team of two, Luis Yu and Leo Zhang. The first version of Climate
 Mesh went into our repository in early August 2026; by the end of that month
 it carried 144 automated tests, and the final review before submission
-brought that to 180. We worked on it together throughout, and we would both
+brought that to 189. We worked on it together throughout, and we would both
 be able to explain any part of it to a judge.
 
 The first thing that worked was the simulator: twenty nodes with a daily
@@ -380,11 +419,17 @@ driver and `gdx` helper. Early-warning statistics are from the World
 Meteorological Organization and UNDRR. The heat index follows the
 NOAA/Steadman formulation.
 
-**Help received.** We declare this whether or not the entry form asks, because
-the whole point of the project is saying where things come from. During the
-final review of this entry (September 2026) we used an AI coding assistant
-(Anthropic's Claude), working under our direction: it reviewed the code and
-fixed the bugs it found; added tests (the suite grew from 144 to 180); batched
+**Help received.** We declare this whether or not the entry form asks,
+because the whole point of the project is saying where things come from.
+
+Ours: the idea and the choice of problem, the architecture, the 20-node
+simulator, the six sub-scores and their thresholds, the neighbour-agreement
+rule, the provenance policy, the decision not to fake a sensor reading, and
+the 144 tests the project already had at the end of August.
+
+Then, during the final review of this entry in September 2026, we used an AI
+coding assistant (Anthropic's Claude), working under our direction: it reviewed the code and
+fixed the bugs it found; added tests (the suite grew from 144 to 189); batched
 the anomaly scoring and wrote the benchmark script and the Arm CI job behind
 the figures in §7; added the offline basemap; captured the screenshots;
 replaced the licence text at our request; and drafted this document, the
@@ -399,7 +444,7 @@ codebase are our own work.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/judge_validate.py        # smoke test + 180 tests + 2 demo cycles + export
+python scripts/judge_validate.py        # smoke test + 189 tests + 2 demo cycles + export
 python scripts/demo_tour.py             # all five scenarios in a few seconds
 python run.py --mode demo --scenario flood --judge-mode   # terminal 1
 python -m streamlit run dashboard/app.py                  # terminal 2 → http://localhost:8501

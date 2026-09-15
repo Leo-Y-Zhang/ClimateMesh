@@ -8,6 +8,16 @@ went up. Keyed by alert type.
 from __future__ import annotations
 
 PLAYBOOKS: dict[str, list[str]] = {
+    # Raised when one node reports a hazard that none of its neighbours can
+    # see. The action is to check the equipment, never to act on the hazard.
+    "sensor-check": [
+        "Check the node itself before acting: look for a blocked, wet, "
+        "knocked or unplugged sensor.",
+        "Compare it with the nearest agreeing node on the Live Map; if they "
+        "disagree, trust the neighbours.",
+        "If the reading is genuine and persists, treat it as a local hazard "
+        "and follow that hazard's actions.",
+    ],
     "flood": [
         "Check and clear nearby drains and gullies.",
         "Inspect low-lying paths and entrances for standing water.",

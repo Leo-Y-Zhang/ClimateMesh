@@ -27,13 +27,37 @@ from data.database import (
 SAFE, MODERATE, WARNING, CRITICAL = "SAFE", "MODERATE", "WARNING", "CRITICAL"
 
 # Don't re-fire the same alert type for the same node within this window unless
-# its severity changes.
-ALERT_COOLDOWN_SECONDS = 45
+# its severity changes. Fifteen minutes, not seconds: the engine scores every
+# three seconds, so a short window would put roughly 1,600 alerts an hour on
+# screen during a storm -- the alert fatigue this project exists to prevent.
+ALERT_COOLDOWN_SECONDS = 900
 
 # A node counts as "elevated" (eligible for mesh correlation) at/above this base.
 _ELEVATED_BASE = 30.0
-# Multiplier applied when an anomaly is confirmed across >=2 neighbours.
+
+# Neighbour agreement is a two-sided trust signal, not just an amplifier.
+#
+#   corroborated    elevated, and >=2 neighbours within 6 km see the same
+#                   hazard             -> escalate
+#   partial         elevated, exactly 1 neighbour agrees   -> leave alone
+#   uncorroborated  elevated, and NO neighbour that could have agreed does
+#                   -> damp, and report it as a possible sensor fault rather
+#                      than as the hazard itself
+#   unavailable     fewer than 2 neighbours in range, so corroboration is not
+#                   possible here at all -> leave alone, and say so
+#
+# The damping is what stops one stuck sensor raising a full hazard alert. It is
+# deliberately mild (a quarter off) because a real, genuinely local event that
+# no neighbour can see must still be able to reach WARNING on its own severity.
 _MESH_MULTIPLIER = 1.2
+_UNCORROBORATED_MULTIPLIER = 0.75
+_MIN_NEIGHBOURS_TO_CORROBORATE = 2
+
+CORROBORATED = "corroborated"
+PARTIAL = "partial"
+UNCORROBORATED = "uncorroborated"
+UNAVAILABLE = "unavailable"
+QUIET = "quiet"
 
 
 # --- Sub-scores ------------------------------------------------------------
@@ -249,7 +273,8 @@ def _contributor_phrase(label: str, reading: dict) -> str:
 
 
 def _explanation(reading: dict, base: dict, score: float,
-                 correlated: bool, correlated_count: int) -> str:
+                 corroboration: str, correlated_count: int,
+                 mesh_degree: int = 0) -> str:
     name = NODES_BY_ID.get(reading["node_id"], {}).get("node_name", reading["node_id"])
     hazard = base["dominant_hazard"]
     factors = (", ".join(_contributor_phrase(f, reading) for f in base["top_factors"])
@@ -265,10 +290,19 @@ def _explanation(reading: dict, base: dict, score: float,
         "cold": "Cold risk rising",
         "risk": "Risk rising",
     }.get(hazard, "Risk rising")
-    mesh_clause = (
-        f" Same trend seen across {correlated_count} nearby nodes."
-        if correlated else " Currently an isolated reading."
-    )
+    if corroboration == UNCORROBORATED:
+        # No neighbour that could have agreed does. Report it as what it most
+        # likely is -- one faulty sensor -- rather than as the hazard.
+        return (f"Check the sensor at {name}: it reports "
+                f"{factors}, but none of its {mesh_degree} neighbours within "
+                f"6 km sees the same thing. Treat as a possible sensor fault "
+                f"and verify before acting. Risk score {math.floor(score)}/100.")
+    mesh_clause = {
+        CORROBORATED: f" Same trend seen across {correlated_count} nearby nodes.",
+        PARTIAL: f" {correlated_count} of {mesh_degree} nearby nodes see the same trend.",
+        UNAVAILABLE: (" No other node is within 6 km, so this reading cannot be "
+                      "corroborated."),
+    }.get(corroboration, " Currently an isolated reading.")
     return (f"{headline} near {name}.{mesh_clause} "
             f"Risk score {math.floor(score)}/100. Main contributors: {factors}.")
 
@@ -293,14 +327,27 @@ def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
             and (bases[n]["base_score"] >= _ELEVATED_BASE or bases[n]["is_anomaly"])
         )
         self_elevated = base["base_score"] >= _ELEVATED_BASE or base["is_anomaly"]
-        correlated = self_elevated and elevated_neighbours >= 2
-        mesh_multiplier = _MESH_MULTIPLIER if correlated else 1.0
+        corroborable = len(neighbours) >= _MIN_NEIGHBOURS_TO_CORROBORATE
+        if not self_elevated:
+            corroboration = QUIET
+        elif not corroborable:
+            corroboration = UNAVAILABLE
+        elif elevated_neighbours >= _MIN_NEIGHBOURS_TO_CORROBORATE:
+            corroboration = CORROBORATED
+        elif elevated_neighbours == 0:
+            corroboration = UNCORROBORATED
+        else:
+            corroboration = PARTIAL
+        correlated = corroboration == CORROBORATED
+        mesh_multiplier = {CORROBORATED: _MESH_MULTIPLIER,
+                           UNCORROBORATED: _UNCORROBORATED_MULTIPLIER}.get(corroboration, 1.0)
 
         # Round once, up front, so the stored score, the band and the text a
         # judge reads all agree (79.96 must not be WARNING with "80/100").
         score = round(min(100.0, base["base_score"] * base["ai_multiplier"] * mesh_multiplier), 1)
         level = risk_level(score)
-        explanation = _explanation(reading, base, score, correlated, elevated_neighbours)
+        explanation = _explanation(reading, base, score, corroboration,
+                                   elevated_neighbours, len(neighbours))
 
         results.append({
             "node_id": node_id,
@@ -317,6 +364,8 @@ def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
             "mesh_multiplier": mesh_multiplier,
             "correlated": correlated,
             "correlated_count": elevated_neighbours,
+            "corroboration": corroboration,
+            "mesh_degree": len(neighbours),
             "top_factors": base["top_factors"],
             "dominant_hazard": base["dominant_hazard"],
             "explanation": explanation,
@@ -335,8 +384,15 @@ def maybe_alert(reading: dict, risk: dict) -> bool:
         return False
 
     hazard = risk["dominant_hazard"]
-    alert_type = hazard if hazard in HAZARDS else "risk"
-    severity = "critical" if risk["level"] == CRITICAL else "warning"
+    if risk.get("corroboration") == UNCORROBORATED:
+        # An uncorroborated reading must not raise the hazard's playbook: the
+        # most likely explanation is a broken sensor, and telling a site team
+        # to clear drains on the word of one unconfirmed node is the failure
+        # this project exists to avoid.
+        alert_type, severity = "sensor-check", "warning"
+    else:
+        alert_type = hazard if hazard in HAZARDS else "risk"
+        severity = "critical" if risk["level"] == CRITICAL else "warning"
 
     recent = get_recent_alert(reading["node_id"], alert_type, ALERT_COOLDOWN_SECONDS)
     if recent is not None and recent["severity"] == severity:

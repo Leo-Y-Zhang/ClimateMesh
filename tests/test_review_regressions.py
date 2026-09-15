@@ -62,9 +62,18 @@ def test_heatwave_demo_never_prints_low_temperature(detector):
 def test_cold_snap_is_a_cold_hazard_not_a_heatwave(detector):
     base = calculate_base(_reading(temperature=-5.0), detector)
     assert base["dominant_hazard"] == "cold"
-    result = compute_all([_reading(temperature=-5.0)], detector)[0]
-    assert result["explanation"].startswith("Cold risk rising")
-    assert maybe_alert(_reading(temperature=-5.0), result) is True
+    # Corroborated by neighbours, so it is reported as the hazard itself.
+    frost = [_reading("CENTRAL-LDN", temperature=-5.0),
+             _reading("HYDE-PARK", temperature=-5.0),
+             _reading("CAMDEN", temperature=-5.0)]
+    results = {r["node_id"]: r for r in compute_all(frost, detector)}
+    assert results["CENTRAL-LDN"]["explanation"].startswith("Cold risk rising")
+    # Alone it is still a cold hazard, but reported as a sensor to check.
+    lone = compute_all([_reading("CENTRAL-LDN", temperature=-5.0)], detector)[0]
+    assert lone["dominant_hazard"] == "cold"
+    assert lone["corroboration"] == "uncorroborated"
+    assert maybe_alert(_reading("CENTRAL-LDN", temperature=-5.0),
+                       results["CENTRAL-LDN"]) is True
 
 
 def test_very_dry_air_is_not_a_flood_signal(detector):
@@ -126,7 +135,10 @@ def test_mesh_correlation_requires_the_same_hazard(detector):
                            _reading("CAMDEN", water_level=3.5)]
     results = {r["node_id"]: r for r in compute_all([smog_node, *flooding_neighbours], detector)}
     assert results["CENTRAL-LDN"]["correlated"] is False
-    assert results["CENTRAL-LDN"]["mesh_multiplier"] == 1.0
+    # Neighbours busy with a *different* hazard corroborate nothing, so the
+    # smog node is uncorroborated and damped rather than merely un-escalated.
+    assert results["CENTRAL-LDN"]["corroboration"] == "uncorroborated"
+    assert results["CENTRAL-LDN"]["mesh_multiplier"] == 0.75
 
 
 # --- Honest API fallbacks -----------------------------------------------------

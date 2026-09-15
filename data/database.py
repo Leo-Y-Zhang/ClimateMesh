@@ -128,6 +128,14 @@ def init_db() -> None:
             conn.execute(f"ALTER TABLE alerts ADD COLUMN {_col} {_decl}")
         except sqlite3.OperationalError:
             pass  # column already present
+    # And for risk scores: a score is acted on, so it must carry how far the
+    # mesh could vouch for it, not just the number.
+    for _col, _decl in (("corroboration", "TEXT"), ("mesh_degree", "INTEGER"),
+                        ("correlated_count", "INTEGER")):
+        try:
+            conn.execute(f"ALTER TABLE risk_scores ADD COLUMN {_col} {_decl}")
+        except sqlite3.OperationalError:
+            pass  # column already present
     conn.commit()
 
 
@@ -183,15 +191,17 @@ def insert_risk_score(risk: dict) -> None:
         """INSERT INTO risk_scores
            (node_id, score, level, temp_sub, humidity_sub, aqi_sub, water_sub,
             wind_sub, pressure_sub, anomaly_score, ai_multiplier, mesh_multiplier,
-            correlated, top_factors, explanation, timestamp)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            correlated, top_factors, explanation, timestamp,
+            corroboration, mesh_degree, correlated_count)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (risk["node_id"], risk["score"], risk["level"], risk["temp_sub"],
          risk["humidity_sub"], risk["aqi_sub"], risk["water_sub"],
          risk.get("wind_sub", 0.0), risk.get("pressure_sub", 0.0),
          risk.get("anomaly_score", 0.0), risk.get("ai_multiplier", 1.0),
          risk.get("mesh_multiplier", 1.0), 1 if risk.get("correlated") else 0,
          json.dumps(risk.get("top_factors", [])), risk.get("explanation", ""),
-         _now()),
+         _now(), risk.get("corroboration", "quiet"),
+         risk.get("mesh_degree", 0), risk.get("correlated_count", 0)),
     )
     conn.commit()
 

@@ -72,7 +72,7 @@ python scripts/judge_validate.py
 
 The `pip install` line is most of that time (it downloads about 200 MB); the
 check itself takes about two minutes. The last command prints a PASS/FAIL
-table; the expected result is **PASS (5/5 steps passed)** with **180 passed**
+table; the expected result is **PASS (5/5 steps passed)** with **189 passed**
 tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
 cycle at 50.8 with 10 alerts. Running `python scripts/demo_tour.py` shows all
 five scenarios in a few seconds. Both work with no internet and no

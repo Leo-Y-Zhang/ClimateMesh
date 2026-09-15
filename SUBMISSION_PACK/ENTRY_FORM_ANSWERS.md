@@ -20,8 +20,10 @@ single Raspberry Pi 5 with no internet and no cloud account. Twenty
 environmental nodes across Greater London report temperature, humidity, air
 quality, water level, wind and pressure every two seconds. A risk engine
 scores each location 0–100, an explainable Isolation Forest flags unusual
-combinations of readings, and *mesh correlation* escalates risk only when
-neighbouring nodes agree, so one faulty sensor cannot cry wolf. Alerts are
+combinations of readings, and *neighbour agreement* escalates risk only when
+nearby nodes see the same hazard while damping a node that no neighbour
+agrees with and reporting it as a sensor to check, so one faulty sensor cannot
+cry wolf. Alerts are
 written in plain English with community action playbooks. Every reading
 carries its data source, and judges can prove the whole system works with one
 command.
@@ -37,7 +39,8 @@ is sensor-ready without being sensor-dependent. For each node a risk engine
 computes six hazard sub-scores and combines them into a 0–100 score with SAFE,
 MODERATE, WARNING and CRITICAL bands. An Isolation Forest learns the normal
 shape of the data and flags anomalous combinations while every channel is
-still only moderately elevated, multiplying graded risk by up to 1.5× (it can
+still only moderately elevated, multiplying graded risk by up to 1.5× (the
+measured range is 1.25× to 1.36×; it can
 amplify risk, never create it) and reporting which channels deviate most. Two
 nodes within 6 km are neighbours; a 1.2× mesh multiplier fires only when a node and at least two neighbours are elevated for
 the same hazard. WARNING and CRITICAL results raise plain-English alerts with
@@ -45,7 +48,7 @@ practical playbooks (clear drains, open a cooling room, move outdoor PE). A
 seven-tab dashboard shows a live risk map, network overview, per-node
 explanations, AI explainability, evidence export, hardware readiness and the
 pitch, and every panel carries a provenance badge so simulated data is never
-mistaken for real. 180 automated tests pass on Python 3.11–3.13 and a single
+mistaken for real. 189 automated tests pass on Python 3.11–3.13 and a single
 command, `python scripts/judge_validate.py`, reproduces the evidence. No
 physical sensor has been validated yet; the software is honest about that on
 every screen.
@@ -71,13 +74,16 @@ needs no subscription, so a school can adopt it without a cloud bill or a
 data-protection review.
 
 **What is innovative about it?**
-(1) Neighbours as a trust signal: a cheap node's risk is escalated (1.2×) only
-when it and at least two neighbours within 6 km are elevated for the same
-hazard, so a network of £85 nodes is harder to fool than one expensive sensor.
+(1) Neighbours as a two-sided trust signal: a cheap node's risk is escalated
+(1.2×) only when it and at least two neighbours within 6 km are elevated for
+the same hazard, and a node no neighbour agrees with is damped (0.75×) and
+reported as a sensor to check rather than as the hazard — so a network of £85
+nodes is harder to fool than one expensive sensor.
 (2) A bounded, explainable AI layer: an Isolation Forest flags unusual
 combinations of readings and names the channels responsible, but can only
-amplify graded risk (up to 1.5×), never create it, so a false anomaly cannot
-turn a SAFE node into an alert. (3) A canonical reading contract with provenance:
+amplify graded risk, never create it: with the mesh layer the two compose to
+at most 1.8×, so nothing below 33.4/100 on its own sub-scores can ever be
+pushed to an alert. (3) A canonical reading contract with provenance:
 sensors, live APIs and simulation are interchangeable, and every reading,
 panel, alert and exported row carries its source and quality flag, enforced in
 code. (4) The whole pipeline, model included, runs offline on one Pi 5 and is

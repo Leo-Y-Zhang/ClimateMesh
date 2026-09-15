@@ -21,8 +21,11 @@ with no cloud subscription.
   all emit the *same* reading shape, so the system is **sensor-ready without
   being sensor-dependent** — a real node joins the mesh by adding one adapter,
   and nothing downstream changes.
-- **Mesh correlation as trust:** a 1.2× escalation fires only when **2+
-  adjacent nodes** agree, so a single glitching node cannot cry wolf.
+- **Mesh agreement as a two-sided trust signal:** a 1.2× escalation fires
+  only when **2+ adjacent nodes** agree for the same hazard, and a node that
+  is elevated while *no* neighbour agrees is damped (0.75×) and reported as a
+  **sensor-check**, not as the hazard — so a single glitching node cannot cry
+  wolf. Both directions are tested (`tests/test_corroboration.py`).
 - **Provenance-first honesty:** every reading, dashboard panel, alert, and
   export carries its data source (`hardware / api / demo / simulation`) and a
   quality flag — honesty is a designed-in feature, not a disclaimer.
@@ -32,7 +35,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **180/180 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **189/189 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
 - The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -195,7 +198,7 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 180 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 189 tests + 2 demo cycles + export
 ```
 
 **One-click (Windows):** double-click **`start.bat`** — it installs deps, starts the
@@ -451,7 +454,7 @@ reading the model returns an anomaly score (0–1), whether it is anomalous, and
 the channels deviating most from the **fitted** baseline. Unlike fixed
 thresholds, it flags an unusual **combination** of values *before* any single
 channel crosses a hard limit. A confirmed anomaly multiplies a node's risk by up
-to **1.5×**.
+to **1.5×** (measured range 1.25×–1.36×).
 
 ## How the risk score works
 
@@ -518,7 +521,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (180 tests)
+pytest                               # the full unit-test suite (189 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

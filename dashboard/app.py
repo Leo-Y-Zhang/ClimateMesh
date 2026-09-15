@@ -467,7 +467,15 @@ with tabs[3]:
         if not anomalous.empty:
             for _, row in anomalous.head(12).iterrows():
                 tags = ", ".join(row["top_factors"]) if isinstance(row["top_factors"], list) else ""
-                mesh = " · 🔗 mesh-correlated" if row.get("correlated") else " · isolated"
+                mesh = {
+                    "corroborated": f" · 🔗 corroborated by {row.get('correlated_count', 0)}"
+                                    f" of {row.get('mesh_degree', 0)} neighbours",
+                    "partial": f" · ◐ {row.get('correlated_count', 0)} of"
+                               f" {row.get('mesh_degree', 0)} neighbours agree",
+                    "uncorroborated": f" · ⚠ uncorroborated — no neighbour of"
+                                      f" {row.get('mesh_degree', 0)} agrees (check the sensor)",
+                    "unavailable": " · ○ cannot be corroborated (fewer than two neighbours in range)",
+                }.get(row.get("corroboration"), " · isolated")
                 st.markdown(
                     f"**{row['node_id']}** — anomaly {row['anomaly_score']:.2f} · "
                     f"AI ×{row['ai_multiplier']:.2f}{mesh}  \n"
