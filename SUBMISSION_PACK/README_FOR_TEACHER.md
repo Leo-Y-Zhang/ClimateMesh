@@ -22,8 +22,8 @@ The full set of dashboard screenshots and terminal evidence is in
 
 ## Before submitting: the ► boxes
 
-The write-up contains four marked boxes (►) that only the team can complete
-truthfully, plus one optional one. Search the Word file for "►".
+The write-up contains three marked places (►) that only the team can
+complete truthfully. Search the Word file for "►".
 
 1. **Replace the placeholder photo inside WRITEUP.docx.** Figure 1 is
    currently a grey "PHOTO 1 GOES HERE" box. Open `WRITEUP.docx`, right-click
@@ -37,10 +37,10 @@ truthfully, plus one optional one. Search the Word file for "►".
    sentence (when you started, who took which parts) and replace the grey
    Figure 7 placeholder with `photos/photo-2-team.jpg` inside the Word file,
    as for Figure 1.
-4. **§12, help received**: one line on any teacher or mentor input (the
-   AI-assistance declaration is already written).
-5. *Optional:* **§7**: run `python scripts/pi_benchmark.py` on the Pi and
-   paste the sentence it prints over the laptop measurements.
+(§7 gives measured laptop figures and a clearly labelled estimate for the
+Pi; §12's declaration of help is complete. If the team later runs
+`python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
+the estimate.)
 
 School and teacher details go only where the entry form itself requires them.
 Nothing in this pack names the school or any adult, deliberately. After

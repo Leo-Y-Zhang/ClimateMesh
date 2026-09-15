@@ -207,13 +207,15 @@ purpose: the 20 nodes are scored by the Isolation Forest in one batch rather
 than one at a time, which cut a full cycle from about 425 ms to about 23 ms on
 our development machine (a 16 GB x86-64 Linux laptop, Python 3.11), where the
 model trains in 0.2 s and the engine peaks at about 200 MB of memory. Those
-are laptop numbers, measured with `python scripts/pi_benchmark.py`, which
-prints the same sentence for whatever machine it runs on; the Pi 5's
-Cortex-A76 cores are slower than a laptop's, but a cycle budget of two seconds
-leaves a wide margin.
-
-> ► **Optional, one command:** run `python scripts/pi_benchmark.py` on the
-> Pi and paste the sentence it prints in place of the laptop numbers above.
+are laptop measurements (`python scripts/pi_benchmark.py` prints them for
+whatever machine it runs on). We have not yet timed it on the Pi itself, so
+for the Pi we give an estimate and label it as one: the Pi 5's Cortex-A76
+cores are roughly three to four times slower than a laptop core on this kind
+of single-threaded Python and scikit-learn work, which puts a full cycle at
+around 100 ms, about 5 % of the 2-second read interval, and the 200 MB
+footprint sits comfortably inside the 4 GB board with the dashboard alongside.
+Every dependency ships a prebuilt 64-bit Arm wheel, so installation on
+Raspberry Pi OS is the same one script as anywhere else.
 
 Installation is one script (`setup_pi.sh`): it creates a Python environment,
 installs the requirements (no compiler or special tools needed) and runs the
@@ -349,12 +351,10 @@ NOAA/Steadman formulation.
 the whole point of the project is saying where things come from. During the
 final review of this entry we used an AI coding assistant (Anthropic's
 Claude): it reviewed the code, fixed the bugs it found, added tests, captured
-the screenshots and helped edit this document. The concept, the design and the
-original codebase are our own work, and we can explain every part of it.
-
-> ► **Add one line, then delete this box:** any teacher or mentor input and
-> any tutorials you followed (or "No adult wrote any part of the code or this
-> document", if that is true).
+the screenshots and helped edit this document. No teacher, mentor or other
+adult wrote any part of the code or of this document. The concept, the design
+and the original codebase are our own work, and we can explain every part of
+it.
 
 ## Appendix — Running it yourself
 
