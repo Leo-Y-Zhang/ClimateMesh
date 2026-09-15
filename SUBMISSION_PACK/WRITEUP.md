@@ -42,8 +42,6 @@ explainable AI model flags unusual combinations of readings, neighbouring
 nodes have to agree before a risk is escalated, and plain-English alerts with
 community action playbooks appear on a seven-tab dashboard.
 
-![Figure 1 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg){.photo}
-
 ## 3. How it works
 
 **One reading shape for every source.** Whether a value comes from a physical
@@ -55,7 +53,7 @@ the AI, the database, the dashboard and the evidence export) only ever sees
 that shape. A real sensor joins the mesh by adding one adapter; nothing else
 changes.
 
-![Figure 2 — The data path. Every source emits the same canonical reading (eight channels plus source and quality flag), so a real sensor is a drop-in and nothing downstream changes; one small database file is the only link between the engine and the dashboard.](figures/architecture.png){.wide}
+![Figure 1 — The data path. Every source emits the same canonical reading (eight channels plus source and quality flag), so a real sensor is a drop-in and nothing downstream changes; one small database file is the only link between the engine and the dashboard.](figures/architecture.png){.wide}
 
 **An explainable risk score.** For each node the engine computes six hazard
 sub-scores on a 0–100 scale (temperature, humidity, air quality, water level,
@@ -101,7 +99,7 @@ containing the plain-English explanation and a playbook of practical, low-risk
 actions for that hazard (flood, heatwave, smog, storm, cold). Alerts are
 rate-limited so the log never fills with duplicates.
 
-![Figure 3 — Node Detail, Regent's Canal, flood scenario, demo data: the "Why:" sentence and the six sub-scores behind a 100/100 score (this node saturates on its base score; see the Hyde Park example above for the mesh layer at work).](figures/node-detail-why-flood-demo.png)
+![Figure 2 — Node Detail, Regent's Canal, flood scenario, demo data: the "Why:" sentence and the six sub-scores behind a 100/100 score (this node saturates on its base score; see the Hyde Park example above for the mesh layer at work).](figures/node-detail-why-flood-demo.png)
 
 **How the parts talk.** The engine writes every reading and score into one
 small database file on the Pi; the dashboard only ever reads that file, so it
@@ -146,7 +144,7 @@ We label exactly what this is and is not.
 | `auto` | Hardware, else API, else simulation | Optional | Optional |
 :::
 
-![Figure 4 — Live Map, flood scenario, demo (simulated) data, on the dashboard's offline basemap. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue lines are the Thames, the Lea, the Wandle and Regent's Canal. The river and canal nodes are the ones in red.](figures/live-map-flood-demo-crop.png)
+![Figure 3 — Live Map, flood scenario, demo (simulated) data, on the dashboard's offline basemap. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue lines are the Thames, the Lea, the Wandle and Regent's Canal. The river and canal nodes are the ones in red.](figures/live-map-flood-demo-crop.png)
 
 - The 20 nodes sit at well-known London landmarks chosen to exercise the
   environment types (river, residential, urban, park). They are illustrative,
@@ -214,13 +212,15 @@ nodes in each band):
 The layers only ever amplify a hazard the sub-scores already see; they cannot
 invent one. These counts are pinned by a test, like the other numbers in this section.
 
-![Figure 5 — Network Overview, flood scenario, demo data: the four river nodes go CRITICAL while inland nodes such as Brixton and Greenwich stay SAFE. The hazard lands where it should, and the purple badge says every value is simulated.](figures/network-overview-flood-demo-crop.png)
+![Figure 4 — Network Overview, flood scenario, demo data: the four river nodes go CRITICAL while inland nodes such as Brixton and Greenwich stay SAFE. The hazard lands where it should, and the purple badge says every value is simulated.](figures/network-overview-flood-demo-crop.png)
 
 ## 7. The Raspberry Pi 5
 
 The Pi 5 is the whole product: it runs the simulator or the live data source,
 the scikit-learn model, the risk engine, the database and the web dashboard at
 the same time, headless, at the site.
+
+![Figure 5 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg){.photo}
 
 ::: {.keep .tbl-bom}
 **Bill of materials for one node (approximate UK prices, September 2026):**

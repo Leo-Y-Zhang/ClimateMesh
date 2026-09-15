@@ -26,7 +26,7 @@ The full set of dashboard screenshots and terminal evidence is in
 The write-up contains two marked places (►), both of them photographs only
 the team can take. Search the Word file for "►".
 
-1. **The two photos.** Figures 1 and 6 are grey "PHOTO GOES HERE" boxes.
+1. **The two photos.** Figures 5 and 6 are grey "PHOTO GOES HERE" boxes.
    The quickest way to replace them, straight from the phone files:
 
    ```bash
@@ -44,7 +44,7 @@ the team can take. Search the Word file for "►".
    (it copies anything newer to `WRITEUP.docx.bak` first). By hand instead:
    see `photos/README.md`. Do not submit while a grey box is there.
 2. **§9, Figure 6**: the team photo, handled by the same command (or the
-   same manual steps) as Figure 1.
+   same manual steps) as Figure 5 in §7.
 
 Nothing else in the write-up needs changing. §1's paragraph on why the team
 chose the project is drafted; read it once and change any word that is not

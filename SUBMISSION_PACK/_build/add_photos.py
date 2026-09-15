@@ -15,9 +15,9 @@ Either photo may be given on its own; the other keeps its placeholder. A
 caption you have already written by hand is kept unless you pass a new one.
 
 Options:
-    --pi PATH            photo for Figure 1 (the Pi running Climate Mesh)
+    --pi PATH            photo for Figure 5 (the Pi running Climate Mesh)
     --team PATH          photo for Figure 6 (the two of you at the Pi)
-    --caption-pi TEXT    set Figure 1's caption (may be used without --pi)
+    --caption-pi TEXT    set Figure 5's caption (may be used without --pi)
     --caption-team TEXT  set Figure 6's caption (may be used without --team)
     --no-build           update photos and captions but skip the Word/PDF rebuild
 
@@ -62,7 +62,7 @@ JPEG_QUALITY = 88
 
 # slot -> (figure number, destination file, default caption)
 SLOTS = {
-    "pi": (1, "photo-1-pi-running.jpg", "The Raspberry Pi 5 running Climate Mesh."),
+    "pi": (5, "photo-1-pi-running.jpg", "The Raspberry Pi 5 running Climate Mesh."),
     "team": (6, "photo-2-team.jpg", "Luis and Leo testing the flood scenario on the Pi."),
 }
 
@@ -225,12 +225,13 @@ def escape_caption(caption: str) -> str:
     return re.sub(r"([\\\[\]])", r"\\\1", caption)  # a stray ] would kill the link
 
 
-def set_caption(figure: int, filename: str, caption: str | None,
+def set_caption(slot: str, caption: str | None,
                 size: tuple[int, int] | None) -> tuple[str, bool] | None:
     """Rewrite that figure's line.
 
     Returns (caption used, kept_the_team's_own) or None if the line was absent.
     """
+    figure, filename, default_caption = SLOTS[slot]
     text = MD.read_text(encoding="utf-8")
     pattern = _figure_pattern(figure, filename)
     match = pattern.search(text)
@@ -242,7 +243,7 @@ def set_caption(figure: int, filename: str, caption: str | None,
     kept = False
     if caption is None:
         if "►" in current:
-            caption = SLOTS["pi" if figure == 1 else "team"][2]
+            caption = default_caption
         else:
             caption, kept = current, True   # the team wrote their own; keep it
 
@@ -287,9 +288,9 @@ def backup_if_newer(path: Path, md_mtime: float) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Add the team's photos to the write-up")
-    ap.add_argument("--pi", type=Path, help="photo for Figure 1 (the Pi running Climate Mesh)")
+    ap.add_argument("--pi", type=Path, help="photo for Figure 5 (the Pi running Climate Mesh)")
     ap.add_argument("--team", type=Path, help="photo for Figure 6 (the two of you at the Pi)")
-    ap.add_argument("--caption-pi", help="set Figure 1's caption")
+    ap.add_argument("--caption-pi", help="set Figure 5's caption")
     ap.add_argument("--caption-team", help="set Figure 6's caption")
     ap.add_argument("--no-build", action="store_true", help="skip the Word/PDF rebuild")
     args = ap.parse_args()
@@ -336,7 +337,7 @@ def main() -> int:
             report, width, height = install_photo(opened[key], PHOTOS / filename)
             print("  " + report)
             size = (width, height)
-        outcome = set_caption(figure, filename, caption, size)
+        outcome = set_caption(key, caption, size)
         if outcome is not None:
             used, kept = outcome
             print(f'  caption{" (kept, yours)" if kept else ""}: "{used}"')

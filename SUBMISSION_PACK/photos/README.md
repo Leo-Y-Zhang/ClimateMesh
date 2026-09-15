@@ -24,7 +24,7 @@ and tells you how to export a JPEG instead.
 
 | Figure | What to photograph |
 |---|---|
-| Figure 1 (`--pi`) | The Raspberry Pi 5 with the engine or dashboard visible on a screen next to it. Run `python run.py --mode demo --scenario flood --judge-mode` on the Pi for the shot. |
+| Figure 5 (`--pi`) | The Raspberry Pi 5 with the engine or dashboard visible on a screen next to it. Run `python run.py --mode demo --scenario flood --judge-mode` on the Pi for the shot. |
 | Figure 6 (`--team`) | Luis and Leo working on the project at the Pi. |
 | Optional | The Vernier Go Direct Weather sensor plugged into the Pi, only if you have one. Do not stage a sensor you do not have. |
 
