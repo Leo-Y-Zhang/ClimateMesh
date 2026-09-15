@@ -45,7 +45,7 @@ practical playbooks (clear drains, open a cooling room, move outdoor PE). A
 seven-tab dashboard shows a live risk map, network overview, per-node
 explanations, AI explainability, evidence export, hardware readiness and the
 pitch, and every panel carries a provenance badge so simulated data is never
-mistaken for real. 173 automated tests pass on Python 3.11–3.13 and a single
+mistaken for real. 180 automated tests pass on Python 3.11–3.13 and a single
 command, `python scripts/judge_validate.py`, reproduces the evidence. No
 physical sensor has been validated yet; the software is honest about that on
 every screen.
@@ -54,9 +54,11 @@ every screen.
 The Pi 5 is the whole product. It runs the data source (simulator, live API or
 a USB Vernier sensor), the scikit-learn anomaly model, the risk engine, the
 SQLite database and the Streamlit web dashboard simultaneously, headless.
-The 20 nodes are scored in one batch, so a full cycle takes about 23 ms on a
-laptop (an estimated 100 ms or so on the Pi 5, about 5 % of the 2-second read
-interval; `python scripts/pi_benchmark.py` prints the measured figure for any
+The 20 nodes are scored in one batch, so a full cycle takes 13 ms on the
+64-bit Arm Linux machine in our continuous integration and about 23 ms on a
+laptop; on the Pi 5 itself, not yet timed, that bounds a cycle at around
+100 ms even if the Pi were eight times slower, about 5 % of the 2-second read
+interval (`python scripts/pi_benchmark.py` prints the measured figure for any
 machine). Setup is one script. The dashboard binds to the Pi's loopback
 interface and is viewed over SSH, so nothing is exposed on the school network,
 and the map has an offline basemap so it works with no internet at all.

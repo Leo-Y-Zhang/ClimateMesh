@@ -37,10 +37,12 @@ truthfully. Search the Word file for "►".
 3. **§9, Figure 6**: replace the grey placeholder with the team photo
    (`photos/photo-2-team.jpg`) inside the Word file, as for Figure 1.
 
-Nothing else in the write-up needs changing: §7 gives measured laptop figures
-and a clearly labelled estimate for the Pi, and §12's declaration of help is
-complete. If the team later runs `python scripts/pi_benchmark.py` on the Pi,
-the sentence it prints can replace the estimate in §7.
+Nothing else in the write-up needs changing: §7 gives measured figures from a
+laptop and from a 64-bit Arm Linux machine in the project's continuous
+integration, plus a clearly labelled bound for the Pi itself, and §12's
+declaration of help is complete. If the team ever runs
+`python scripts/pi_benchmark.py` on the Pi, the sentence it prints can replace
+that bound.
 
 School and teacher details go only where the entry form itself requires them.
 Nothing in this pack names the school or any adult, deliberately. After
@@ -57,7 +59,7 @@ python scripts/judge_validate.py
 
 The `pip install` line is most of that time (it downloads about 200 MB); the
 check itself takes about two minutes. The last command prints a PASS/FAIL
-table; the expected result is **PASS (5/5 steps passed)** with **173 passed**
+table; the expected result is **PASS (5/5 steps passed)** with **180 passed**
 tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
 cycle at 50.8 with 10 alerts. Running `python scripts/demo_tour.py` shows all
 five scenarios in about thirty seconds. Both work with no internet and no
