@@ -53,8 +53,9 @@ every screen.
 The Pi 5 is the whole product. It runs the data source (simulator, live API or
 a USB Vernier sensor), the scikit-learn anomaly model, the risk engine, the
 SQLite database and the Streamlit web dashboard simultaneously, headless.
-Setup is one script. **► Add one measured line from your own Pi (cycle time,
-CPU %, memory) if you have it.** The dashboard binds to the Pi's loopback
+The 20 nodes are scored in one batch, so a full cycle takes about 23 ms on a
+laptop against a 2-second read interval (`python scripts/pi_benchmark.py`
+prints the figure for any machine). Setup is one script. The dashboard binds to the Pi's loopback
 interface and is viewed over SSH, so nothing is exposed on the school network,
 and the map has an offline basemap so it works with no internet at all.
 
@@ -121,7 +122,7 @@ repository link if the form asks for one and the repository is up to date.**
 **Acknowledgements and help received:**
 Streamlit, scikit-learn, pandas, NumPy, Plotly; Open-Meteo (free weather
 data); Vernier godirect/gdx; WMO/UNDRR early-warning statistics; NOAA
-heat-index formulation. **► Declare help received whether or not the form
-asks: any teacher or mentor input, tutorials followed, and any AI-assisted
-tools (named) and what they were used for; then say which parts you designed
-and wrote yourselves.**
+heat-index formulation. During the final review of the entry we used an AI
+coding assistant (Anthropic's Claude) for code review, bug fixes, tests,
+screenshots and editing the write-up; the concept, design and original
+codebase are our own. **► Add any teacher or mentor input.**

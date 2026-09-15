@@ -157,8 +157,13 @@ def _hazard_for(sub_key: str, reading: dict) -> str:
     return hazard
 
 
-def calculate_base(reading: dict, detector: AnomalyDetector) -> dict:
-    """Compute the per-node base risk (no mesh correlation yet)."""
+def calculate_base(reading: dict, detector: AnomalyDetector, ai: dict | None = None) -> dict:
+    """Compute the per-node base risk (no mesh correlation yet).
+
+    ``ai`` is the detector's verdict for this reading; when omitted it is
+    computed here. ``compute_all`` scores a whole cycle in one batch and
+    passes the verdicts in, which is much cheaper on a Raspberry Pi.
+    """
     subs = {
         "temp_sub": _temp_sub(reading["temperature"]),
         "humidity_sub": _humidity_sub(reading["humidity"]),
@@ -173,7 +178,8 @@ def calculate_base(reading: dict, detector: AnomalyDetector) -> dict:
     worst = max(vals)
     base_score = min(100.0, worst + 0.20 * (sum(vals) - worst))
 
-    ai = detector.predict(reading)
+    if ai is None:
+        ai = detector.predict(reading)
     ai_multiplier = 1.0 + ai["score"] * 0.5 if ai["is_anomaly"] else 1.0
 
     # Top contributing factors, in order of contribution.
@@ -269,7 +275,9 @@ def _explanation(reading: dict, base: dict, score: float,
 
 def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
     """Compute full explainable risk for every reading, including mesh correlation."""
-    bases = {r["node_id"]: calculate_base(r, detector) for r in readings}
+    verdicts = detector.predict_many(readings)
+    bases = {r["node_id"]: calculate_base(r, detector, ai)
+             for r, ai in zip(readings, verdicts)}
     reading_by_id = {r["node_id"]: r for r in readings}
 
     results = []

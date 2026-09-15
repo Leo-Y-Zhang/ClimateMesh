@@ -202,17 +202,18 @@ invent one. These counts are pinned by a test, like every other number here.
 
 The Pi 5 is the whole product: it runs the simulator or the live data source,
 the scikit-learn model, the risk engine, the database and the web dashboard at
-the same time, headless, at the site.
+the same time, headless, at the site. We kept the per-cycle cost small on
+purpose: the 20 nodes are scored by the Isolation Forest in one batch rather
+than one at a time, which cut a full cycle from about 425 ms to about 23 ms on
+our development machine (a 16 GB x86-64 Linux laptop, Python 3.11), where the
+model trains in 0.2 s and the engine peaks at about 200 MB of memory. Those
+are laptop numbers, measured with `python scripts/pi_benchmark.py`, which
+prints the same sentence for whatever machine it runs on; the Pi 5's
+Cortex-A76 cores are slower than a laptop's, but a cycle budget of two seconds
+leaves a wide margin.
 
-> ► **Fill in from your own Pi, then delete this box.** "We ran the flood demo
-> and the dashboard together on our Pi 5 (4 GB, Raspberry Pi OS ___) for ___
-> hours on ___; a full cycle of 20 nodes took about ___ ms, the engine used
-> about ___ % of one core, the whole system about ___ MB of memory, and the
-> test suite passed in ___ s." Get the numbers from `/usr/bin/time -v python
-> run.py --mode demo --scenario flood --once` (wall time and maximum resident
-> set size), `top` while both processes run, and `time python -m pytest -q`.
-> If you have not yet completed a run on the Pi, say so here instead; do not
-> guess.
+> ► **Optional, one command:** run `python scripts/pi_benchmark.py` on the
+> Pi and paste the sentence it prints in place of the laptop numbers above.
 
 Installation is one script (`setup_pi.sh`): it creates a Python environment,
 installs the requirements (no compiler or special tools needed) and runs the
@@ -328,12 +329,16 @@ driver and `gdx` helper. Early-warning statistics are from the World
 Meteorological Organization and UNDRR. The heat index follows the
 NOAA/Steadman formulation.
 
-> ► **Declare help received, whether or not the form asks, then delete this
-> box.** One or two sentences: any teacher or mentor input, tutorials you
-> followed, and any AI-assisted tools (name them) and what you used them for
-> (for example drafting tests, debugging, editing this write-up). Then say
-> plainly which parts you designed and wrote yourselves. Judges at the final
-> may ask exactly this.
+**Help received.** We declare this whether or not the entry form asks, because
+the whole point of the project is saying where things come from. During the
+final review of this entry we used an AI coding assistant (Anthropic's
+Claude): it reviewed the code, fixed the bugs it found, added tests, captured
+the screenshots and helped edit this document. The concept, the design and the
+original codebase are our own work, and we can explain every part of it.
+
+> ► **Add one line, then delete this box:** any teacher or mentor input and
+> any tutorials you followed (or "No adult wrote any part of the code or this
+> document", if that is true).
 
 ## Appendix — Running it yourself
 

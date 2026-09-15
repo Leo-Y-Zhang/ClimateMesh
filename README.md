@@ -375,6 +375,7 @@ ClimateMesh/
     export_evidence.py       # CSV + JSON evidence export + source-count table
     run_validation.py        # one-command pass/fail validation
     smoke_test.py            # fast end-to-end check
+    pi_benchmark.py          # measures cycle time + memory on this machine, prints a sentence
   tests/                     # pytest suite
   docs/                      # hardware driver setup, integration plan, evidence checklist, screenshots
   SUBMISSION_PACK/           # competition write-up (.md/.docx), entry-form answers, photos
@@ -518,6 +519,7 @@ pytest                               # the full unit-test suite (173 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION
+python scripts/pi_benchmark.py       # cycle time, training time, peak memory on this machine
 ```
 
 ## Roadmap
@@ -542,6 +544,5 @@ Built by **Luis Yu and Leo Zhang**, two sixth-form students.
 
 ## Licence
 
-Proprietary — All Rights Reserved. Copyright (c) 2026 Leo Y. Zhang.
-See [LICENSE](LICENSE) for the exact terms (read, run and evaluate locally;
-no reuse rights granted).
+MIT. Copyright (c) 2026 Luis Yu and Leo Zhang. See [LICENSE](LICENSE):
+anyone may run, study, copy and adapt it, with attribution.

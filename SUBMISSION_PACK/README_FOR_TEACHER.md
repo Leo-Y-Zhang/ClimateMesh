@@ -22,8 +22,8 @@ The full set of dashboard screenshots and terminal evidence is in
 
 ## Before submitting: the ► boxes
 
-The write-up contains five marked boxes (►) that only the team can complete
-truthfully. Search the Word file for "►" to find them all.
+The write-up contains four marked boxes (►) that only the team can complete
+truthfully, plus one optional one. Search the Word file for "►".
 
 1. **Replace the placeholder photo inside WRITEUP.docx.** Figure 1 is
    currently a grey "PHOTO 1 GOES HERE" box. Open `WRITEUP.docx`, right-click
@@ -33,12 +33,12 @@ truthfully. Search the Word file for "►" to find them all.
    version. Do not submit while the grey box is there.
 2. **§1, the personal reason** for choosing this project (one or two
    sentences, in the students' words).
-3. **§7, measurements from the team's own Pi 5** (or an honest note that a
-   full run on the Pi has not been completed yet).
-4. **§9, Teamwork**: who did what, in the first person; add
+3. **§9, Teamwork**: who did what, in the first person; add
    `photos/photo-2-team.jpg` there.
-5. **§12, help received**: mentors, tutorials and any AI-assisted tools,
-   declared whether or not the form asks.
+4. **§12, help received**: one line on any teacher or mentor input (the
+   AI-assistance declaration is already written).
+5. *Optional:* **§7**: run `python scripts/pi_benchmark.py` on the Pi and
+   paste the sentence it prints over the laptop measurements.
 
 School and teacher details go only where the entry form itself requires them.
 Nothing in this pack names the school or any adult, deliberately. After
