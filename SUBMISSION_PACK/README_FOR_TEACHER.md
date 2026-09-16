@@ -10,7 +10,7 @@ the working project itself (code, tests, documentation, screenshots).
 
 | File | What it is |
 |---|---|
-| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 3,000 words of body text (excluding tables, captions and the ► boxes) with seven figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first (and the words "its full output is reproduced in the Appendix" in §6), then the ablation table in §6 with the two sentences under it, then the worked examples at the end of §3 (and the "see the Hyde Park example above" clause in the Figure 3 caption). Keep §12 (the declaration of help) whatever else goes. |
+| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 4,400 words of body text (excluding tables, captions and the ► boxes) with seven figures and five tables. ► Check the competition's word limit; if you must cut, drop the Appendix first (about 250 words, and the words "its full output is reproduced in the Appendix" in §6), then §6's "Reading it cold" subsection with Figure 5 (about 500 words), then the ablation table in §6 with the two sentences under it, then the worked examples at the end of §3 (and the "see the Hyde Park example above" clause in the Figure 2 caption). Keep §12 (the declaration of help) whatever else goes. |
 | `WRITEUP.pdf` | The same entry as a fixed-layout PDF (about 16 pages; the last holds the demo tour's full output), for reading or printing. The command below rebuilds it; only fall back to Word's File → Save As → PDF if that tooling is not installed, accepting a different layout. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
@@ -72,7 +72,7 @@ python scripts/judge_validate.py
 
 The `pip install` line is most of that time (it downloads about 200 MB); the
 check itself takes about two minutes. The last command prints a PASS/FAIL
-table; the expected result is **PASS (5/5 steps passed)** with **212 passed**
+table; the expected result is **PASS (5/5 steps passed)** with **228 passed**
 tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
 cycle at 50.8 with 10 alerts. Running `python scripts/demo_tour.py` shows all
 five scenarios in a few seconds. Both work with no internet and no
@@ -84,8 +84,11 @@ commands at the end of the main `README.md`.
 The only personal information anywhere in it is the two names on the cover.
 Checked before packaging:
 
-- No school, teacher, email address, username or handle appears in any file,
-  and no machine name or file path from any computer used to build it.
+- No school, teacher, email address, phone number or postal address appears in
+  any file, and no machine name or file path from any computer used to build
+  it. The one identifier present is the students' own public repository link,
+  `github.com/Leo-Y-Zhang/ClimateMesh`, which the entry form asks for; it
+  carries one of the two names already on the cover and nothing else.
 - The Word file's properties carry only the title and the two names. The
   PDF's metadata fields are empty.
 - Every image ships with its metadata stripped. Phone photos normally carry

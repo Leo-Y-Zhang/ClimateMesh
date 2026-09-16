@@ -137,6 +137,16 @@ def init_db() -> None:
             conn.execute(f"ALTER TABLE risk_scores ADD COLUMN {_col} {_decl}")
         except sqlite3.OperationalError:
             pass  # column already present
+    # A row written before these columns existed holds NULL, and a NULL in an
+    # otherwise-integer column reaches the dashboard as NaN, which is truthy --
+    # so `value or 0` does not catch it and int(NaN) takes the page down.
+    for _col, _default in (("corroboration", "'quiet'"), ("mesh_degree", "0"),
+                           ("correlated_count", "0"), ("dominant_hazard", "'risk'")):
+        try:
+            conn.execute(
+                f"UPDATE risk_scores SET {_col} = {_default} WHERE {_col} IS NULL")
+        except sqlite3.OperationalError:
+            pass  # table not created yet on this connection
     conn.commit()
 
 

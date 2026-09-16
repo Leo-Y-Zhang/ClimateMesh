@@ -300,8 +300,14 @@ def _explanation(reading: dict, base: dict, score: float,
     mesh_clause = {
         CORROBORATED: f" Same trend seen across {correlated_count} nearby nodes.",
         PARTIAL: f" {correlated_count} of {mesh_degree} nearby nodes see the same trend.",
+        # Count-aware: Ilford has exactly one neighbour, so a flat "no other
+        # node is within 6 km" was false on the one node this branch exists
+        # to describe.
         UNAVAILABLE: (" No other node is within 6 km, so this reading cannot be "
-                      "corroborated."),
+                      "corroborated." if mesh_degree == 0 else
+                      f" Only {mesh_degree} other node{'' if mesh_degree == 1 else 's'} "
+                      f"{'is' if mesh_degree == 1 else 'are'} within 6 km, which is "
+                      "not enough to corroborate this reading."),
     }.get(corroboration, " Currently an isolated reading.")
     return (f"{headline} near {name}.{mesh_clause} "
             f"Risk score {math.floor(score)}/100. Main contributors: {factors}.")
@@ -373,6 +379,22 @@ def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
     return results
 
 
+def alert_type_for(risk: dict) -> str:
+    """The one place that decides which playbook a scored node gets.
+
+    An uncorroborated reading must not raise the hazard's playbook: the most
+    likely explanation is a broken sensor, and telling a site team to clear
+    drains on the word of one unconfirmed node is the failure this project
+    exists to avoid. Every surface that shows a playbook -- the alert row, the
+    Live Map panel, Node Detail -- calls this, so none of them can disagree
+    with the others about the same node.
+    """
+    if risk.get("corroboration") == UNCORROBORATED:
+        return "sensor-check"
+    hazard = risk.get("dominant_hazard")
+    return hazard if hazard in HAZARDS else "risk"
+
+
 def maybe_alert(reading: dict, risk: dict) -> bool:
     """Create an alert if warranted, respecting cooldown and severity changes.
 
@@ -383,15 +405,10 @@ def maybe_alert(reading: dict, risk: dict) -> bool:
     if risk["level"] in (SAFE, MODERATE):
         return False
 
-    hazard = risk["dominant_hazard"]
-    if risk.get("corroboration") == UNCORROBORATED:
-        # An uncorroborated reading must not raise the hazard's playbook: the
-        # most likely explanation is a broken sensor, and telling a site team
-        # to clear drains on the word of one unconfirmed node is the failure
-        # this project exists to avoid.
-        alert_type, severity = "sensor-check", "warning"
+    alert_type = alert_type_for(risk)
+    if alert_type == "sensor-check":
+        severity = "warning"
     else:
-        alert_type = hazard if hazard in HAZARDS else "risk"
         severity = "critical" if risk["level"] == CRITICAL else "warning"
 
     recent = get_recent_alert(reading["node_id"], alert_type, ALERT_COOLDOWN_SECONDS)

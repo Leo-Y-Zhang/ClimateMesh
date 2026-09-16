@@ -16,10 +16,11 @@ date: "PA Raspberry Pi Competition 2026/27 · Theme: Building a Positive Human F
 The official river gauge nearest to a school or an estate can be kilometres
 away from the stream, drain or underpass that actually floods. By the time an
 official warning reaches a community, the water is already rising. The World
-Meteorological Organization reports that countries with limited early-warning
-coverage suffer nearly six times the disaster mortality of countries with
-substantial coverage (4.05 versus 0.71 deaths per 100,000 people; WMO/UNDRR,
-*Global Status of Multi-Hazard Early Warning Systems*, 2023). There is a gap
+Meteorological Organization reports that countries with limited to moderate
+early-warning coverage suffer nearly six times the disaster mortality of
+countries with substantial to comprehensive coverage (4.05 versus 0.71 deaths
+per 100,000 people; WMO/UNDRR, *Global Status of Multi-Hazard Early Warning
+Systems*, 2023). There is a gap
 between where climate events happen and where they are measured.
 
 We picked this because it is the rare climate problem two students can
@@ -77,7 +78,8 @@ Deliberately, the AI can amplify risk but never create it, and the bound is
 arithmetic rather than anecdote: the AI and mesh multipliers compose to at
 most 1.5 × 1.2 = 1.8, so a node whose own sub-scores are below 33.4/100 can
 never reach WARNING and one below 44.5 can never reach CRITICAL, whatever the
-two layers say. Measured over 80,000 synthetic readings the AI multiplier
+two layers say. Measured over 4,000 synthetic readings drawn from a grid far
+wider than any of these channels can physically reach, the AI multiplier
 actually lands between 1.25× and 1.36× against that 1.5 design ceiling. A test
 sweeps the whole range and fails if the bound is ever exceeded. Offline
 it trains on 2,000 deterministic synthetic samples; when online it can instead
@@ -166,6 +168,12 @@ We label exactly what this is and is not.
 
 ![Figure 3 — Live Map, flood scenario, demo (simulated) data, on the dashboard's offline basemap. Each circle is one of the 20 nodes; colour and size show risk 0–100; the blue lines are the Thames, the Lea, the Wandle and Regent's Canal. The river and canal nodes are the ones in red.](figures/live-map-flood-demo-crop.png)
 
+- **There is one computer, not twenty.** The design is decentralised — every
+  node is scored on its own readings, there is no central authority, and
+  agreement is asked of neighbours within 6 km rather than of a server — but
+  all 20 nodes currently run as peers inside one process on one Pi 5. Putting
+  the peers on separate devices is §10's third item, not something we are
+  claiming to have done.
 - The 20 nodes sit at well-known London landmarks chosen to exercise the
   environment types (river, residential, urban, park). They are illustrative,
   not deployment sites.
@@ -194,13 +202,13 @@ We label exactly what this is and is not.
 
 ## 6. Evidence that it works
 
-- **212 automated tests pass** on Python 3.11, 3.12 and 3.13, including a test
+- **228 automated tests pass** on Python 3.11, 3.12 and 3.13, including a test
   that executes all seven dashboard tabs in Streamlit's headless test harness
   and tests that pin the exact numbers quoted below. Continuous integration
   runs the suite on every push to `main` and every pull request, on x86-64
   (Python 3.11 and 3.13) and on a 64-bit Arm Linux runner (Python 3.11), the
   Pi's architecture; 3.12 was checked by hand.
-- `python scripts/judge_validate.py` runs the smoke test, all 212 tests, a
+- `python scripts/judge_validate.py` runs the smoke test, all 228 tests, a
   normal and a flood demo cycle and the evidence export → **PASS (5/5 steps
   passed)**. Its full output is `docs/screenshots/terminal-judge_validate.png`
   in the repository.
@@ -217,7 +225,7 @@ We label exactly what this is and is not.
 
 **Do the layers earn their place?** Counting how many nodes changed band is
 activity, not accuracy, so `python scripts/evaluate.py` measures the three
-things that matter, on 1,290 independently seeded frames. Each configuration
+things that matter, on 1,320 independently seeded frames. Each configuration
 sees identical frames; a frame counts as detected when some node raises an
 alert for the hazard that was actually injected.
 
@@ -229,6 +237,12 @@ alert for the hazard that was actually injected.
 | \+ AI + mesh (shipped) | 0 % | **0 %** | 100 % |
 :::
 
+The AI column is honest about itself: on all three of these measures it scores
+exactly what the thresholds alone score. Where it earns its place is in
+between — at intensity 0.4 it detects 8.3 % of frames against the thresholds'
+2.5 %, and at 0.6 it detects 75.0 % against 50.8 % — and in the explanation it
+attaches to every alert. It is not what stops the false alarms; the mesh is.
+
 The middle column is the whole argument. Given one jammed water sensor and
 nothing else happening, thresholds alone raise a false flood alert every
 single time, and so does the AI, because neither has any way to ask whether
@@ -236,7 +250,7 @@ anyone else can see it. The shipped system raised none, and a sensor-check
 instead — without giving up a single real detection at full intensity.
 
 The honest cost is in between: across intensities 0.5 to 0.7, where an event
-is real but only half-formed, the mesh detects 39–63 % of frames against
+is real but only half-formed, the mesh detects 35–62 % of frames against
 50–75 % for thresholds alone, because it holds back nodes no neighbour has
 confirmed yet. We would rather be a step late on a half-formed event than cry
 wolf every time an instrument fails, and the numbers say which we bought.
@@ -358,9 +372,9 @@ the final review (four cores, 16 GB, Python 3.11), where the model trains in
 **On Arm.** The same suite and benchmark run in our continuous integration on
 a real 64-bit Arm Linux machine (GitHub's Arm runner: four Neoverse-N2 cores,
 16 GB, Python 3.11 as the Bookworm release of Raspberry Pi OS ships). Every dependency installed from
-a prebuilt Arm wheel with compilation forbidden, all 212 tests passed in 13 s,
-the model trained in 0.1 s, a full 20-node cycle took 13–14 ms across runs and
-the engine peaked at 199 MB.
+a prebuilt Arm wheel with compilation forbidden, all 228 tests passed in
+12–14 s across runs, the model trained in 0.1 s, a full 20-node cycle took
+13–14 ms and the engine peaked at 199 MB.
 
 **On the Pi.** It runs on our own Pi 5; we have not put a stopwatch on it
 there, so for the board we give a bound rather than a number: its Cortex-A76
@@ -410,7 +424,7 @@ early-warning mesh.
 We are a team of two, Luis Yu and Leo Zhang. The first version of Climate
 Mesh went into our repository in early August 2026; by the end of that month
 it carried 144 automated tests, and the final review before submission
-brought that to 212. We worked on it together throughout, and we would both
+brought that to 228. We worked on it together throughout, and we would both
 be able to explain any part of it to a judge.
 
 The first thing that worked was the simulator: twenty nodes with a daily
@@ -502,7 +516,7 @@ the 144 tests the project already had at the end of August.
 
 Then, during the final review of this entry in September 2026, we used an AI
 coding assistant (Anthropic's Claude), working under our direction: it reviewed the code and
-fixed the bugs it found; added tests (the suite grew from 144 to 212); batched
+fixed the bugs it found; added tests (the suite grew from 144 to 228); batched
 the anomaly scoring and wrote the benchmark script and the Arm CI job behind
 the figures in §7; added the offline basemap; captured the screenshots;
 replaced the licence text at our request; and drafted this document, the
@@ -517,7 +531,7 @@ codebase are our own work.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/judge_validate.py        # smoke test + 212 tests + 2 demo cycles + export
+python scripts/judge_validate.py        # smoke test + 228 tests + 2 demo cycles + export
 python scripts/demo_tour.py             # all five scenarios in a few seconds
 python scripts/evaluate.py              # detection vs false alarms, ~1 minute
 python run.py --mode demo --scenario flood --judge-mode   # terminal 1

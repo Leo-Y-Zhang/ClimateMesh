@@ -24,8 +24,10 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from backend.playbooks import playbook_for
+from backend.risk_engine import alert_type_for
 from dashboard.formatting import (
-    age_phrase, age_seconds, corroboration_line, node_name as _node_name, short_name,
+    age_phrase, age_seconds, corroboration_line, node_name as _node_name, score_text,
+    short_name,
 )
 from dashboard.badges import (
     effective_source_from_readings, quality_badge_html, source_badge_html,
@@ -148,6 +150,8 @@ init_db()
 LEVEL_ICON = {"SAFE": "🟢", "MODERATE": "🟡", "WARNING": "🟠", "CRITICAL": "🔴"}
 # The two bands that mean somebody should do something.
 ACTING_LEVELS = ("WARNING", "CRITICAL")
+# Shown for a node whose reading has arrived but whose risk row has not.
+SAFE_UNSCORED = "—"
 
 
 def _write_scenario(scenario: str) -> None:
@@ -215,13 +219,14 @@ def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
     panel = st.container(border=True)
     top = acting.iloc[0]
     node_id = top["node_id"]
-    latest = next((a for a in alerts if a["node_id"] == node_id), None)
-    hazard = str((latest or {}).get("alert_type")
-                 or top.get("dominant_hazard") or "risk")
+    # Derived from the risk row, never from the alert log: the log is the newest
+    # 40 rows, so a storm elsewhere used to push this node's sensor-check out of
+    # the window and the panel fell back to the hazard it had just damped.
+    hazard = alert_type_for(top)
     icon = LEVEL_ICON.get(top["level"], "⚪")
     box = panel.error if top["level"] == "CRITICAL" else panel.warning
     box(f"{icon}  **Act now — {_node_name(node_id)} · "
-        f"{top['score']:.0f}/100 {top['level']} · {hazard}**")
+        f"{score_text(top['score'])} {top['level']} · {hazard}**")
     if top.get("explanation"):
         panel.markdown(f"**Why:** {top['explanation']}")
     note = _corroboration_line(top)
@@ -233,8 +238,9 @@ def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
                     + "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1)))
     others = acting.iloc[1:]
     if not others.empty:
-        names = ", ".join(f"{_node_name(r['node_id'])} ({r['score']:.0f} {r['level']})"
-                          for _, r in others.head(5).iterrows())
+        names = ", ".join(
+            f"{_node_name(r['node_id'])} ({score_text(r['score']).split('/')[0]} "
+            f"{r['level']})" for _, r in others.head(5).iterrows())
         more = "" if len(others) <= 5 else f", and {len(others) - 5} more"
         panel.caption(f"Also above the action threshold: {names}{more}. "
                       "Open **Node Detail** for any node's full breakdown.")
@@ -290,6 +296,12 @@ if not readings_df.empty and not risks_df.empty:
                   if c in risks_df.columns]],
         on="node_id", how="left",
     )
+    # A left join leaves NaN for any node whose risk row has not been written
+    # yet -- the state the database is in between insert_readings and the first
+    # insert_risk_score, every tick. Plotly refuses a NaN marker size and takes
+    # the whole page down with it, so unscored nodes are shown as zero.
+    merged["score"] = merged["score"].fillna(0.0)
+    merged["level"] = merged["level"].fillna(SAFE_UNSCORED)
     merged["size"] = merged["score"].clip(lower=8)
 
 sources_present = sorted(readings_df["source"].unique()) if not readings_df.empty else []
@@ -308,9 +320,11 @@ with banner:
     # The first question anyone with a building to look after asks is "how bad
     # is it, and where?". The configured source is still reported, in the
     # provenance line below, which reads it from the rows actually on screen.
-    if not risks_df.empty:
-        _worst = risks_df.iloc[0]
-        c2.metric(f"Highest risk · {_worst['score']:.0f}/100 {_worst['level']}",
+    # From `merged`, the same frame the map and the Act-now panel use, so the
+    # header can never name a node the panel below it does not.
+    if not merged.empty:
+        _worst = merged.sort_values("score", ascending=False).iloc[0]
+        c2.metric(f"Highest risk · {score_text(_worst['score'])} {_worst['level']}",
                   _node_name(_worst["node_id"]))
     else:
         c2.metric("Highest risk", "—")
@@ -373,7 +387,7 @@ with st.sidebar:
             # whether 62 is fine or not.
             st.markdown(
                 f"{icon} **{_node_name(row['node_id'])}** — "
-                f"{row['score']:.0f}/100 · {row['level']}<br>"
+                f"{score_text(row['score'])} · {row['level']}<br>"
                 f"<span style='font-size:0.75rem;color:#8a94a6'>{row['node_id']}</span>"
                 f" {badge}",
                 unsafe_allow_html=True)
@@ -490,7 +504,8 @@ with tabs[2]:
     if not readings_df.empty:
         node_id = st.selectbox("Select node", sorted(readings_df["node_id"]))
         row = readings_df[readings_df["node_id"] == node_id].iloc[0]
-        rrow = risks_df[risks_df["node_id"] == node_id]
+        rrow = (risks_df[risks_df["node_id"] == node_id]
+                if "node_id" in risks_df.columns else pd.DataFrame())
         st.markdown(f"### {row.get('node_name', node_id)}  ·  `{node_id}`")
         st.markdown(
             "**Data source:** " + source_badge_html(row["source"])
@@ -518,13 +533,13 @@ with tabs[2]:
 
         if not rrow.empty:
             r = rrow.iloc[0]
-            st.metric("Risk score", f"{r['score']:.0f}/100", r["level"], delta_color="off")
+            st.metric("Risk score", score_text(r["score"]), r["level"], delta_color="off")
             st.markdown(f"**Why:** {r['explanation']}")
             _note = _corroboration_line(r)
             if _note:
                 st.markdown(_note)
             if r["level"] in ACTING_LEVELS:
-                _hazard = str(r.get("dominant_hazard") or "risk")
+                _hazard = alert_type_for(r)
                 _steps = playbook_for(_hazard)
                 if _steps:
                     st.markdown(f"**What to do ({_hazard})**\n\n"
