@@ -9,6 +9,7 @@ live here where a unit test can reach them directly.
 
 from __future__ import annotations
 
+import math
 import re
 from datetime import datetime, timezone
 
@@ -57,6 +58,36 @@ def age_phrase(seconds: float) -> str:
     return f"{hours} h {minutes:02d} min ago"
 
 
+def _count(value) -> int:
+    """A stored count as an int, treating NULL, NaN and junk as zero.
+
+    A risk row written before the mesh columns existed holds NULL, which pandas
+    turns into NaN -- and ``nan or 0`` is ``nan``, because NaN is truthy, so the
+    obvious guard does not fire and int(nan) takes the whole page down.
+    """
+    if value is None:
+        return 0
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return 0
+    return 0 if math.isnan(number) else int(number)
+
+
+def score_text(score) -> str:
+    """'79.8' -> '79/100'. Floored, never rounded.
+
+    The engine floors a score before naming its band, so rounding it for
+    display can print a number on the wrong side of the boundary the same page
+    is showing: 79.8 shown as "80/100 · WARNING" reads as a contradiction of
+    the dashboard's own CRITICAL-at-80 line.
+    """
+    try:
+        return f"{math.floor(float(score))}/100"
+    except (TypeError, ValueError):
+        return "—/100"
+
+
 def corroboration_line(corroboration: str, agreeing: int, neighbours: int) -> str:
     """One sentence on whether the mesh can vouch for a node's reading.
 
@@ -64,7 +95,7 @@ def corroboration_line(corroboration: str, agreeing: int, neighbours: int) -> st
     to corroborate and nothing worth saying.
     """
     state = str(corroboration or "quiet")
-    agreeing, neighbours = int(agreeing or 0), int(neighbours or 0)
+    agreeing, neighbours = _count(agreeing), _count(neighbours)
     if state == "corroborated":
         return (f"✅ **Confirmed by the mesh** — {agreeing} of this node's "
                 f"{neighbours} neighbours within 6 km report the same hazard.")
@@ -77,6 +108,11 @@ def corroboration_line(corroboration: str, agreeing: int, neighbours: int) -> st
         return (f"🟡 **Partly corroborated** — {agreeing} of {neighbours} neighbours "
                 "agree, which is not yet enough to escalate.")
     if state == "unavailable":
-        return (f"ℹ️ **Cannot be corroborated** — only {neighbours} other node(s) lie "
-                "within 6 km, so the mesh has no second opinion to offer here.")
+        if neighbours == 0:
+            return ("ℹ️ **Cannot be corroborated** — no other node lies within 6 km, "
+                    "so the mesh has no second opinion to offer here.")
+        return (f"ℹ️ **Cannot be corroborated** — only {neighbours} other node"
+                f"{'' if neighbours == 1 else 's'} "
+                f"{'lies' if neighbours == 1 else 'lie'} within 6 km, so the mesh has "
+                "no second opinion to offer here.")
     return ""

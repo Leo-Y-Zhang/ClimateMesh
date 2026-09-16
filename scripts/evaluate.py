@@ -30,7 +30,8 @@ Three configurations are compared on identical frames:
     + AI + mesh     the shipped system, including the corroboration rule that
                     refuses to raise a hazard alert no neighbour agrees with
 
-Everything is seeded, so two runs print the same table.
+Everything is seeded, so two runs print the same table. Check that: run it
+twice and diff the output.
 """
 
 from __future__ import annotations
@@ -77,7 +78,10 @@ def frame(scenario: str, intensity: float, seed: int,
     """
     readings = []
     for node in NODES:
-        values = generate_channels(node, TICK, "none", deterministic=False, seed=seed)
+        # deterministic=True is what actually honours `seed`: with it False the
+        # simulator returns an unseeded random.Random() and the seed argument
+        # does nothing, which made this whole table irreproducible.
+        values = generate_channels(node, TICK, "none", deterministic=True, seed=seed)
         if scenario != "none" and intensity > 0:
             for channel in list(values):
                 delta = scenario_delta(scenario, node["environment"], channel)

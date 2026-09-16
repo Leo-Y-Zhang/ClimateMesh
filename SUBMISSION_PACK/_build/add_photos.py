@@ -15,10 +15,10 @@ Either photo may be given on its own; the other keeps its placeholder. A
 caption you have already written by hand is kept unless you pass a new one.
 
 Options:
-    --pi PATH            photo for Figure 5 (the Pi running Climate Mesh)
-    --team PATH          photo for Figure 6 (the two of you at the Pi)
-    --caption-pi TEXT    set Figure 5's caption (may be used without --pi)
-    --caption-team TEXT  set Figure 6's caption (may be used without --team)
+    --pi PATH            photo for Figure 6 (the Pi running Climate Mesh)
+    --team PATH          photo for Figure 7 (the two of you at the Pi)
+    --caption-pi TEXT    set Figure 6's caption (may be used without --pi)
+    --caption-team TEXT  set Figure 7's caption (may be used without --team)
     --no-build           update photos and captions but skip the Word/PDF rebuild
 
 Needs the packages in ``_build/requirements-build.txt``:
@@ -41,6 +41,23 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+from PIL import Image
+
+# An iPhone shoots HEIC by default, so this is the common case, not the exotic
+# one. pillow-heif being installed is not enough: Pillow only gains the format
+# once the opener is registered, and without this the tool told students to
+# install a package they already had and then failed again.
+try:
+    import pillow_heif
+
+    pillow_heif.register_heif_opener()
+except ImportError:      # documented below; the error message explains it
+    pass
+
+# A modern phone can exceed Pillow's default bomb guard (about 89 MP), and a
+# 200 MP photo is a photograph, not an attack. Raised, not disabled.
+Image.MAX_IMAGE_PIXELS = 400_000_000
 
 for _stream in (sys.stdout, sys.stderr):
     try:  # a non-UTF-8 console (Windows, or a redirect) must not kill the run
@@ -257,12 +274,24 @@ def set_caption(slot: str, caption: str | None,
 
 
 def remaining_placeholders() -> list[str]:
-    text = MD.read_text(encoding="utf-8")
+    """Figures still carrying a ► placeholder caption.
+
+    This deliberately does NOT use _figure_pattern: set_caption() uses it too,
+    so a hand-edited figure line that the pattern no longer matches would leave
+    the caption untouched *and* be reported as clean -- the tool telling you
+    the job is done at the exact moment it silently did nothing. Scanning the
+    raw text for ► cannot agree with set_caption by construction.
+    """
     left = []
-    for slot, (figure, filename, _) in SLOTS.items():
-        match = _figure_pattern(figure, filename).search(text)
-        if match and "►" in match.group("cap"):
-            left.append(f"Figure {figure} (--{slot})")
+    for line in MD.read_text(encoding="utf-8").splitlines():
+        if "►" not in line or not line.lstrip().startswith("!["):
+            continue
+        for slot, (figure, _filename, _) in SLOTS.items():
+            if f"Figure {figure} " in line:
+                left.append(f"Figure {figure} (--{slot})")
+                break
+        else:
+            left.append(line.strip()[:60] + "…")
     return left
 
 
@@ -348,11 +377,15 @@ def main() -> int:
     if left:
         print("\nStill a grey PHOTO GOES HERE box: " + ", ".join(left)
               + ". Do not submit until it is gone.")
+    elif args.no_build:
+        print("\nBoth photos are in the Markdown; no ► placeholders left there.")
     else:
         print("\nBoth photos are in; no placeholders left in the write-up.")
 
     if args.no_build:
-        print("Skipped the rebuild (--no-build). Run _build/build_writeup.py when ready.")
+        print("Skipped the rebuild (--no-build), so WRITEUP.docx and WRITEUP.pdf\n"
+              "still show the grey box. Run _build/build_writeup.py before sending "
+              "them.")
         return 0
 
     print("\nRebuilding WRITEUP.docx and WRITEUP.pdf …")

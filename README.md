@@ -35,7 +35,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **212/212 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **228/228 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
 - The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -198,7 +198,7 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 212 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 228 tests + 2 demo cycles + export
 python scripts/evaluate.py         # detection and false-alarm rates vs a thresholds-only baseline
 ```
 
@@ -465,8 +465,8 @@ humidity, air quality, water level, wind, pressure — and combines them
 humidity are two-sided: a frosty morning is filed as a **cold** hazard with its
 own playbook, never as a "heatwave". It then applies:
 
-- **AI multiplier** (up to 1.5×; in practice 1.25–1.5× once the Isolation
-  Forest confirms an anomaly, and exactly 1.0× otherwise), and
+- **AI multiplier** (design ceiling 1.5×; measured range 1.25×–1.36× once the
+  Isolation Forest confirms an anomaly, and exactly 1.0× otherwise), and
 - **Mesh multiplier** (1.2×) when **2+ adjacent nodes** show the same trend — a
   single spike is trusted less than a correlated regional event.
 
@@ -522,7 +522,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (212 tests)
+pytest                               # the full unit-test suite (228 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

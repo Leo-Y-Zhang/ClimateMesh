@@ -144,7 +144,14 @@ def test_the_header_names_the_highest_risk_node_and_its_band():
     assert "/100" in worst.label
     assert any(band in worst.label
                for band in ("SAFE", "MODERATE", "WARNING", "CRITICAL")), worst.label
-    assert worst.value == node_name(get_risk_scores()[0]["node_id"])
+    # It must name a node that really is at the top score. Four nodes tie at
+    # 100/100 in the flood frame, so pinning one of them would pin a tie-break,
+    # not the behaviour; what matters is that the header and the Act-now panel
+    # below it never name different nodes (see test_audit_regressions.py).
+    top_score = max(r["score"] for r in get_risk_scores())
+    named = {node_name(r["node_id"]) for r in get_risk_scores()
+             if r["score"] == top_score}
+    assert worst.value in named, (worst.value, named)
 
 
 # --- the reader can tell how old the data is ------------------------------

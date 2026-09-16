@@ -26,7 +26,7 @@ SEEDS = range(1000, 1010)
 def _frame(seed: int, stuck: str):
     readings = []
     for node in NODES:
-        values = generate_channels(node, 0.0, "none", deterministic=False, seed=seed)
+        values = generate_channels(node, 0.0, "none", deterministic=True, seed=seed)
         if node["node_id"] == stuck:
             values["water_level"] = STUCK_WATER_M
         readings.append(make_reading(node, source="simulation", **values))
