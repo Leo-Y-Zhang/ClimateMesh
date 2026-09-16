@@ -62,8 +62,8 @@ JPEG_QUALITY = 88
 
 # slot -> (figure number, destination file, default caption)
 SLOTS = {
-    "pi": (5, "photo-1-pi-running.jpg", "The Raspberry Pi 5 running Climate Mesh."),
-    "team": (6, "photo-2-team.jpg", "Luis and Leo testing the flood scenario on the Pi."),
+    "pi": (6, "photo-1-pi-running.jpg", "The Raspberry Pi 5 running Climate Mesh."),
+    "team": (7, "photo-2-team.jpg", "Luis and Leo testing the flood scenario on the Pi."),
 }
 
 

@@ -33,7 +33,7 @@ from ai.anomaly_model import AnomalyDetector            # noqa: E402
 from backend.risk_engine import compute_all             # noqa: E402
 from data.database import (                             # noqa: E402
     count_rows, get_latest_readings_per_node, get_risk_scores, init_db,
-    insert_alert, insert_reading, insert_risk_score, reset_db,
+    insert_reading, insert_risk_score, reset_db,
 )
 from backend.risk_engine import maybe_alert             # noqa: E402
 from sensors import create_adapter                      # noqa: E402

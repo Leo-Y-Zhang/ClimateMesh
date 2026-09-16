@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import math
-import re
 import sys
 import time
 from datetime import datetime
@@ -25,7 +24,9 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from backend.playbooks import playbook_for
-from config.nodes import NODES
+from dashboard.formatting import (
+    age_phrase, age_seconds, corroboration_line, node_name as _node_name, short_name,
+)
 from dashboard.badges import (
     effective_source_from_readings, quality_badge_html, source_badge_html,
     source_label, sources_legend_html,
@@ -91,7 +92,7 @@ _LABEL_POS = {
 
 def _short_name(name: str) -> str:
     """'Regent's Canal (Little Venice)' -> \"Regent's Canal\" for map labels."""
-    return re.sub(r"\s*\(.*\)\s*$", "", str(name))
+    return short_name(name)
 
 
 def _offline_map(df: pd.DataFrame):
@@ -124,9 +125,11 @@ def _offline_map(df: pd.DataFrame):
             colorscale=[[0, "#2ecc71"], [0.33, "#f1c40f"], [0.66, "#e67e22"], [1, "#e74c3c"]],
             colorbar=dict(title="score", thickness=14, len=0.7),
             line=dict(width=1.5, color="white"), opacity=0.92),
-        customdata=list(zip(df["node_id"], df["level"], df["score"].round(0), df["source"])),
+        customdata=list(zip(df["node_id"], df["level"], df["score"].round(0), df["source"],
+                            _column(df, "dominant_hazard", "risk"))),
         hovertemplate="<b>%{text}</b> (%{customdata[0]})<br>risk %{customdata[2]}/100 · "
-                      "%{customdata[1]}<br>source: %{customdata[3]}<extra></extra>",
+                      "<b>%{customdata[1]}</b><br>main hazard: %{customdata[4]}"
+                      "<br>source: %{customdata[3]}<extra></extra>",
         showlegend=False))
     fig.add_annotation(xref="paper", yref="paper", x=0.01, y=0.01, showarrow=False,
                        text="Offline basemap · waterways approximate · nodes are illustrative landmarks",
@@ -143,6 +146,8 @@ st.set_page_config(page_title="Climate Mesh", page_icon="🌍", layout="wide")
 init_db()
 
 LEVEL_ICON = {"SAFE": "🟢", "MODERATE": "🟡", "WARNING": "🟠", "CRITICAL": "🔴"}
+# The two bands that mean somebody should do something.
+ACTING_LEVELS = ("WARNING", "CRITICAL")
 
 
 def _write_scenario(scenario: str) -> None:
@@ -181,6 +186,60 @@ def _local_hms(ts: str) -> str:
         return str(ts)
 
 
+def _column(df: pd.DataFrame, name: str, default):
+    """``df[name]`` if the column survived the merge, else a constant column."""
+    if name in df.columns:
+        return df[name].fillna(default)
+    return pd.Series([default] * len(df), index=df.index)
+
+
+def _corroboration_line(row) -> str:
+    """:func:`corroboration_line` for a risk row from the database."""
+    return corroboration_line(row.get("corroboration"),
+                              row.get("correlated_count"), row.get("mesh_degree"))
+
+
+def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
+    """The answer to "so what do I do?", on the first screen rather than the third.
+
+    Every alert already carries an action playbook and the engine has always
+    stored one; until now nothing in the dashboard displayed it, so a reader
+    who found the red node still had nowhere to go.
+    """
+    acting = merged[merged["level"].isin(ACTING_LEVELS)].sort_values(
+        "score", ascending=False)
+    if acting.empty:
+        st.success("**Nothing to act on.** No node is at WARNING or CRITICAL. "
+                   "The map below shows the current score at every node.")
+        return
+    panel = st.container(border=True)
+    top = acting.iloc[0]
+    node_id = top["node_id"]
+    latest = next((a for a in alerts if a["node_id"] == node_id), None)
+    hazard = str((latest or {}).get("alert_type")
+                 or top.get("dominant_hazard") or "risk")
+    icon = LEVEL_ICON.get(top["level"], "⚪")
+    box = panel.error if top["level"] == "CRITICAL" else panel.warning
+    box(f"{icon}  **Act now — {_node_name(node_id)} · "
+        f"{top['score']:.0f}/100 {top['level']} · {hazard}**")
+    if top.get("explanation"):
+        panel.markdown(f"**Why:** {top['explanation']}")
+    note = _corroboration_line(top)
+    if note:
+        panel.markdown(note)
+    steps = playbook_for(hazard)
+    if steps:
+        panel.markdown("**What to do**\n\n"
+                    + "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1)))
+    others = acting.iloc[1:]
+    if not others.empty:
+        names = ", ".join(f"{_node_name(r['node_id'])} ({r['score']:.0f} {r['level']})"
+                          for _, r in others.head(5).iterrows())
+        more = "" if len(others) <= 5 else f", and {len(others) - 5} more"
+        panel.caption(f"Also above the action threshold: {names}{more}. "
+                      "Open **Node Detail** for any node's full breakdown.")
+
+
 def _scatter_map(df: pd.DataFrame, offline: bool = False):
     """Build a risk-coloured map, tolerating both old and new plotly APIs.
 
@@ -198,7 +257,9 @@ def _scatter_map(df: pd.DataFrame, offline: bool = False):
         range_color=[0, 100], size_max=22, zoom=9,
         center={"lat": 51.50, "lon": -0.11}, hover_name="node_name",
         hover_data={"node_id": True, "level": True, "score": ":.0f",
+                    "dominant_hazard": True,
                     "source": True, "latitude": False, "longitude": False, "size": False},
+        labels={"dominant_hazard": "main hazard", "level": "band"},
     )
     try:  # plotly >= 5.24 (maplibre)
         fig = px.scatter_map(df, map_style=style, **common)
@@ -220,10 +281,13 @@ risks_df = pd.DataFrame(risks) if risks else pd.DataFrame()
 merged = pd.DataFrame()
 if not readings_df.empty and not risks_df.empty:
     merged = readings_df.merge(
-        risks_df[["node_id", "score", "level", "anomaly_score", "ai_multiplier",
-                  "mesh_multiplier", "correlated", "temp_sub", "humidity_sub",
-                  "aqi_sub", "water_sub", "wind_sub", "pressure_sub",
-                  "explanation", "top_factors"]],
+        risks_df[[c for c in
+                  ["node_id", "score", "level", "anomaly_score", "ai_multiplier",
+                   "mesh_multiplier", "correlated", "corroboration", "dominant_hazard",
+                   "mesh_degree", "correlated_count",
+                   "temp_sub", "humidity_sub", "aqi_sub", "water_sub", "wind_sub",
+                   "pressure_sub", "explanation", "top_factors"]
+                  if c in risks_df.columns]],
         on="node_id", how="left",
     )
     merged["size"] = merged["score"].clip(lower=8)
@@ -241,9 +305,28 @@ banner = st.container()
 with banner:
     c1, c2, c3, c4 = st.columns([2, 2, 2, 2])
     c1.metric("Mode", mode.upper())
-    c2.metric("Data source", configured_source.upper())
+    # The first question anyone with a building to look after asks is "how bad
+    # is it, and where?". The configured source is still reported, in the
+    # provenance line below, which reads it from the rows actually on screen.
+    if not risks_df.empty:
+        _worst = risks_df.iloc[0]
+        c2.metric(f"Highest risk · {_worst['score']:.0f}/100 {_worst['level']}",
+                  _node_name(_worst["node_id"]))
+    else:
+        c2.metric("Highest risk", "—")
     c3.metric("Active scenario", active_scenario.upper())
     c4.metric("Nodes online", f"{len(readings_df)}/20" if not readings_df.empty else "0/20")
+    if not readings_df.empty:
+        _newest = max(readings_df["timestamp"], default=None)
+        _age = age_seconds(_newest) if _newest else None
+        if _age is not None:
+            _line = (f"Configured source: `{configured_source}` · readings updated "
+                     f"**{_local_hms(_newest)}** ({age_phrase(_age)})")
+            if _age > 120:
+                st.warning(_line + " — this is older than two minutes. Check the "
+                           "engine (`run.py`) is still running before acting on it.")
+            else:
+                st.caption(_line)
     if sources_present:
         st.markdown(
             "**Data source(s) in view:** " + sources_legend_html(sources_present),
@@ -284,8 +367,15 @@ with st.sidebar:
         for _, row in risks_df.iterrows():
             icon = LEVEL_ICON.get(row["level"], "⚪")
             badge = source_badge_html(_src_by_node.get(row["node_id"], "simulation"))
+            # The band word is deliberately redundant with the coloured dot:
+            # red and green are exactly the pair a red-green colour-blind
+            # reader cannot separate, and "62/100" on its own does not say
+            # whether 62 is fine or not.
             st.markdown(
-                f"{icon} **{row['node_id']}** — {row['score']:.0f}/100<br>{badge}",
+                f"{icon} **{_node_name(row['node_id'])}** — "
+                f"{row['score']:.0f}/100 · {row['level']}<br>"
+                f"<span style='font-size:0.75rem;color:#8a94a6'>{row['node_id']}</span>"
+                f" {badge}",
                 unsafe_allow_html=True)
     else:
         st.info("Waiting for data…")
@@ -309,6 +399,7 @@ with tabs[0]:
     if info.get("blurb"):
         st.caption(info["blurb"])
     if not merged.empty:
+        _act_now(merged, alerts)
         st.markdown("**Provenance of mapped nodes:** "
                     + sources_legend_html(sorted(merged["source"].unique())),
                     unsafe_allow_html=True)
@@ -351,8 +442,12 @@ with tabs[1]:
             bar = px.bar(risks_df.sort_values("score"), x="score", y="node_id",
                          orientation="h", color="score", range_color=[0, 100],
                          color_continuous_scale=["#2ecc71", "#f1c40f", "#e67e22", "#e74c3c"])
-            bar.add_vline(x=60, line_dash="dash", line_color="orange")
-            bar.add_vline(x=80, line_dash="dash", line_color="red")
+            bar.add_vline(x=60, line_dash="dash", line_color="orange",
+                          annotation_text="WARNING 60", annotation_position="top",
+                          annotation_font=dict(size=10, color="#c2670a"))
+            bar.add_vline(x=80, line_dash="dash", line_color="red",
+                          annotation_text="CRITICAL 80", annotation_position="top",
+                          annotation_font=dict(size=10, color="#c0392b"))
             bar.update_layout(height=460, margin=dict(t=10, b=10))
             st.plotly_chart(bar, use_container_width=True)
         with cc2:
@@ -373,10 +468,18 @@ with tabs[1]:
 
         st.subheader("Recent alerts")
         if alerts:
+            st.caption("Each alert opens to the action playbook the engine "
+                       "attached to it.")
             for a in alerts[:12]:
                 icon = "🔴" if a["severity"] == "critical" else "🟠"
                 ts = _local_hms(a["timestamp"])
-                st.markdown(f"{icon} **[{ts}]** `{a['node_id']}` — {a['message']}")
+                st.markdown(f"{icon} **[{ts}]** {_node_name(a['node_id'])} — "
+                            f"{a['message']}")
+                steps = playbook_for(a["alert_type"])
+                if steps:
+                    with st.expander(f"What to do about this {a['alert_type']} alert"):
+                        for i, step in enumerate(steps, 1):
+                            st.markdown(f"{i}. {step}")
         else:
             st.success("No active alerts — all nodes within safe parameters.")
     else:
@@ -417,6 +520,16 @@ with tabs[2]:
             r = rrow.iloc[0]
             st.metric("Risk score", f"{r['score']:.0f}/100", r["level"], delta_color="off")
             st.markdown(f"**Why:** {r['explanation']}")
+            _note = _corroboration_line(r)
+            if _note:
+                st.markdown(_note)
+            if r["level"] in ACTING_LEVELS:
+                _hazard = str(r.get("dominant_hazard") or "risk")
+                _steps = playbook_for(_hazard)
+                if _steps:
+                    st.markdown(f"**What to do ({_hazard})**\n\n"
+                                + "\n".join(f"{i}. {step}"
+                                             for i, step in enumerate(_steps, 1)))
             subs = {"Temperature": r["temp_sub"], "Humidity": r["humidity_sub"],
                     "Air quality": r["aqi_sub"], "Water level": r["water_sub"],
                     "Wind": r["wind_sub"], "Pressure": r["pressure_sub"]}

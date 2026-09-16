@@ -13,7 +13,7 @@ import pytest
 from ai.anomaly_model import AnomalyDetector
 from backend.risk_engine import (UNCORROBORATED, CRITICAL, WARNING,
                                  calculate_base, compute_all, risk_level)
-from config.nodes import NODES, NODES_BY_ID
+from config.nodes import NODES
 from sensors.base import make_reading
 from simulation.engine import generate_channels
 
