@@ -6,11 +6,17 @@ demo / API / hardware) so judges always know what is real. To date, all evidence
 is produced with simulation or live-API data — physical sensors are not yet
 connected.
 
+> A reference set captured from this exact tree (dashboard tabs in demo /
+> flood, plus terminal output of every command below) lives in
+> `docs/screenshots/`. Retake anything you want on the Pi itself; the Live
+> Map shots use the sidebar's **Offline basemap** option, which needs no
+> internet (untick it for street tiles when online).
+
 ## 0. Before you start
 - [ ] `cd` into the repo and activate the Python environment.
 - [ ] Reset to a clean, deterministic state: `python scripts/reset_demo_db.py`
 - [ ] Run the test suite and screenshot the result: `pytest`
-      *(expect the full suite to pass — currently 91 tests; label the screenshot
+      *(expect the full suite to pass — currently 192 tests; label the screenshot
       "Tests: NN passing" to match the count it prints)*.
 - [ ] Run the smoke test: `python scripts/smoke_test.py`
 
@@ -37,7 +43,8 @@ shot with the active data source.
 - [ ] **Live Map** — the 20 Greater London nodes coloured by risk band.
 - [ ] **Network Overview** — fleet-wide risk summary.
 - [ ] **Node Detail** — a single node (e.g. Thames Barrier) with its sub-scores.
-- [ ] **AI Explainability** — anomaly multiplier and the six hazard sub-scores.
+- [ ] **AI Explainability** — the nodes the Isolation Forest flagged, their
+      anomaly score / AI multiplier, and the anomaly-score histogram.
 - [ ] **Evidence & Validation** — validation results and export status.
 - [ ] **Hardware Readiness** — the adapter/contract readiness panel.
 - [ ] **Competition Pitch** — the summary pitch slide.

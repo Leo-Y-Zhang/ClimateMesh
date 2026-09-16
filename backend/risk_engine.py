@@ -1,8 +1,8 @@
 """Explainable risk engine for Climate Mesh.
 
-For each node it computes six 0-25 sub-scores (temperature, humidity, air
-quality, water level, wind, pressure), combines them into a 0-100 base score,
-then amplifies that by an AI anomaly multiplier and a mesh-correlation
+For each node it computes six 0-100 hazard sub-scores (temperature, humidity,
+air quality, water level, wind, pressure), combines them (worst hazard + 20% of
+the rest) into a 0-100 base score, then amplifies that by an AI anomaly multiplier and a mesh-correlation
 multiplier. A single isolated spike is treated with caution; the same anomaly
 confirmed across adjacent nodes escalates the risk — that is the core mesh
 idea. Every result carries its top contributing factors and a plain-English
@@ -13,6 +13,7 @@ duplicates.
 from __future__ import annotations
 
 import asyncio
+import math
 
 from ai.anomaly_model import AnomalyDetector
 from backend.playbooks import playbook_text
@@ -26,13 +27,37 @@ from data.database import (
 SAFE, MODERATE, WARNING, CRITICAL = "SAFE", "MODERATE", "WARNING", "CRITICAL"
 
 # Don't re-fire the same alert type for the same node within this window unless
-# its severity changes.
-ALERT_COOLDOWN_SECONDS = 45
+# its severity changes. Fifteen minutes, not seconds: the engine scores every
+# three seconds, so a short window would put roughly 1,600 alerts an hour on
+# screen during a storm -- the alert fatigue this project exists to prevent.
+ALERT_COOLDOWN_SECONDS = 900
 
 # A node counts as "elevated" (eligible for mesh correlation) at/above this base.
 _ELEVATED_BASE = 30.0
-# Multiplier applied when an anomaly is confirmed across >=2 neighbours.
+
+# Neighbour agreement is a two-sided trust signal, not just an amplifier.
+#
+#   corroborated    elevated, and >=2 neighbours within 6 km see the same
+#                   hazard             -> escalate
+#   partial         elevated, exactly 1 neighbour agrees   -> leave alone
+#   uncorroborated  elevated, and NO neighbour that could have agreed does
+#                   -> damp, and report it as a possible sensor fault rather
+#                      than as the hazard itself
+#   unavailable     fewer than 2 neighbours in range, so corroboration is not
+#                   possible here at all -> leave alone, and say so
+#
+# The damping is what stops one stuck sensor raising a full hazard alert. It is
+# deliberately mild (a quarter off) because a real, genuinely local event that
+# no neighbour can see must still be able to reach WARNING on its own severity.
 _MESH_MULTIPLIER = 1.2
+_UNCORROBORATED_MULTIPLIER = 0.75
+_MIN_NEIGHBOURS_TO_CORROBORATE = 2
+
+CORROBORATED = "corroborated"
+PARTIAL = "partial"
+UNCORROBORATED = "uncorroborated"
+UNAVAILABLE = "unavailable"
+QUIET = "quiet"
 
 
 # --- Sub-scores ------------------------------------------------------------
@@ -47,7 +72,18 @@ def _lin(x: float, x0: float, y0: float, x1: float, y1: float) -> float:
     return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
 
 
+def _finite(x: float) -> bool:
+    """True for an ordinary number. NaN/inf compare False against every
+    threshold, which would otherwise fall through to the *maximum* severity;
+    a non-measured value must score 0, never CRITICAL."""
+    try:
+        return math.isfinite(float(x))
+    except (TypeError, ValueError):
+        return False
+
+
 def _temp_sub(t: float) -> float:
+    if not _finite(t): return 0.0
     if t >= 45:  return 100.0
     if t >= 40:  return _lin(t, 40, 90, 45, 100)
     if t >= 36:  return _lin(t, 36, 70, 40, 90)
@@ -61,6 +97,7 @@ def _temp_sub(t: float) -> float:
 
 
 def _humidity_sub(h: float) -> float:
+    if not _finite(h): return 0.0
     if h >= 100: return 70.0
     if h >= 85:  return _lin(h, 85, 25, 100, 70)
     if h > 25:   return 0.0
@@ -70,6 +107,7 @@ def _humidity_sub(h: float) -> float:
 
 
 def _aqi_sub(a: float) -> float:
+    if not _finite(a): return 0.0
     if a >= 500: return 100.0
     if a >= 300: return _lin(a, 300, 90, 500, 100)
     if a >= 200: return _lin(a, 200, 70, 300, 90)
@@ -80,6 +118,7 @@ def _aqi_sub(a: float) -> float:
 
 
 def _water_sub(w: float) -> float:
+    if not _finite(w): return 0.0
     if w >= 8:   return 100.0
     if w >= 6:   return _lin(w, 6, 95, 8, 100)
     if w >= 4:   return _lin(w, 4, 75, 6, 95)
@@ -90,6 +129,7 @@ def _water_sub(w: float) -> float:
 
 
 def _wind_sub(v: float) -> float:
+    if not _finite(v): return 0.0
     if v >= 35: return 100.0
     if v >= 25: return _lin(v, 25, 80, 35, 100)
     if v >= 15: return _lin(v, 15, 45, 25, 80)
@@ -98,6 +138,7 @@ def _wind_sub(v: float) -> float:
 
 
 def _pressure_sub(p: float) -> float:
+    if not _finite(p): return 0.0
     if p <= 970:  return 100.0
     if p <= 980:  return _lin(p, 980, 80, 970, 100)
     if p <= 990:  return _lin(p, 990, 55, 980, 80)
@@ -123,9 +164,30 @@ _FACTOR_LABELS = {
     "pressure_sub": ("pressure drop", "storm"),
 }
 
+# Hazards an alert can be filed under (each has a headline and a playbook).
+HAZARDS = ("flood", "smog", "heatwave", "storm", "cold")
 
-def calculate_base(reading: dict, detector: AnomalyDetector) -> dict:
-    """Compute the per-node base risk (no mesh correlation yet)."""
+
+def _hazard_for(sub_key: str, reading: dict) -> str:
+    """Dominant hazard for the top sub-score, taking the *direction* into
+    account: temperature and humidity are two-sided scales, so a frosty
+    morning is a cold hazard (not a 'heatwave') and very dry air is not a
+    flood signal."""
+    hazard = _FACTOR_LABELS[sub_key][1]
+    if sub_key == "temp_sub" and float(reading.get("temperature", 15.0)) < 24:
+        return "cold"
+    if sub_key == "humidity_sub" and float(reading.get("humidity", 60.0)) < 85:
+        return "risk"
+    return hazard
+
+
+def calculate_base(reading: dict, detector: AnomalyDetector, ai: dict | None = None) -> dict:
+    """Compute the per-node base risk (no mesh correlation yet).
+
+    ``ai`` is the detector's verdict for this reading; when omitted it is
+    computed here. ``compute_all`` scores a whole cycle in one batch and
+    passes the verdicts in, which is much cheaper on a Raspberry Pi.
+    """
     subs = {
         "temp_sub": _temp_sub(reading["temperature"]),
         "humidity_sub": _humidity_sub(reading["humidity"]),
@@ -140,13 +202,14 @@ def calculate_base(reading: dict, detector: AnomalyDetector) -> dict:
     worst = max(vals)
     base_score = min(100.0, worst + 0.20 * (sum(vals) - worst))
 
-    ai = detector.predict(reading)
+    if ai is None:
+        ai = detector.predict(reading)
     ai_multiplier = 1.0 + ai["score"] * 0.5 if ai["is_anomaly"] else 1.0
 
     # Top contributing factors, in order of contribution.
     ranked = sorted(subs.items(), key=lambda kv: kv[1], reverse=True)
     top_factors = [_FACTOR_LABELS[k][0] for k, v in ranked if v >= 15.0][:3]
-    dominant_hazard = _FACTOR_LABELS[ranked[0][0]][1] if ranked[0][1] >= 15.0 else "risk"
+    dominant_hazard = _hazard_for(ranked[0][0], reading) if ranked[0][1] >= 15.0 else "risk"
 
     return {
         "node_id": reading["node_id"],
@@ -186,6 +249,7 @@ def _contributor_phrase(label: str, reading: dict) -> str:
         word = ("extreme heat" if t >= 40 else
                 "very high temperature" if t >= 36 else
                 "high temperature" if t >= 30 else
+                "warm temperature" if t >= 24 else
                 "extreme cold" if t <= -5 else
                 "freezing temperature" if t < 0 else "low temperature")
         return f"{word} ({t:.0f} °C)"
@@ -209,54 +273,85 @@ def _contributor_phrase(label: str, reading: dict) -> str:
 
 
 def _explanation(reading: dict, base: dict, score: float,
-                 correlated: bool, correlated_count: int) -> str:
+                 corroboration: str, correlated_count: int,
+                 mesh_degree: int = 0) -> str:
     name = NODES_BY_ID.get(reading["node_id"], {}).get("node_name", reading["node_id"])
     hazard = base["dominant_hazard"]
     factors = (", ".join(_contributor_phrase(f, reading) for f in base["top_factors"])
                if base["top_factors"] else "multiple factors")
     level = risk_level(score)
     if level == SAFE:
-        return f"{name}: conditions normal. Risk score {score:.0f}/100."
+        return f"{name}: conditions normal. Risk score {math.floor(score)}/100."
     headline = {
         "flood": "Flood risk rising",
         "smog": "Air-quality risk rising",
         "heatwave": "Heat risk rising",
         "storm": "Storm risk rising",
+        "cold": "Cold risk rising",
         "risk": "Risk rising",
     }.get(hazard, "Risk rising")
-    mesh_clause = (
-        f" Same trend seen across {correlated_count} nearby nodes."
-        if correlated else " Currently an isolated reading."
-    )
+    if corroboration == UNCORROBORATED:
+        # No neighbour that could have agreed does. Report it as what it most
+        # likely is -- one faulty sensor -- rather than as the hazard.
+        return (f"Check the sensor at {name}: it reports "
+                f"{factors}, but none of its {mesh_degree} neighbours within "
+                f"6 km sees the same thing. Treat as a possible sensor fault "
+                f"and verify before acting. Risk score {math.floor(score)}/100.")
+    mesh_clause = {
+        CORROBORATED: f" Same trend seen across {correlated_count} nearby nodes.",
+        PARTIAL: f" {correlated_count} of {mesh_degree} nearby nodes see the same trend.",
+        UNAVAILABLE: (" No other node is within 6 km, so this reading cannot be "
+                      "corroborated."),
+    }.get(corroboration, " Currently an isolated reading.")
     return (f"{headline} near {name}.{mesh_clause} "
-            f"Risk score {score:.0f}/100. Main contributors: {factors}.")
+            f"Risk score {math.floor(score)}/100. Main contributors: {factors}.")
 
 
 def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
     """Compute full explainable risk for every reading, including mesh correlation."""
-    bases = {r["node_id"]: calculate_base(r, detector) for r in readings}
+    verdicts = detector.predict_many(readings)
+    bases = {r["node_id"]: calculate_base(r, detector, ai)
+             for r, ai in zip(readings, verdicts)}
     reading_by_id = {r["node_id"]: r for r in readings}
 
     results = []
     for node_id, base in bases.items():
         reading = reading_by_id[node_id]
-        # Mesh correlation: count neighbours that are also elevated/anomalous.
+        # Mesh correlation: count neighbours that are also elevated/anomalous
+        # for the SAME hazard -- "same trend", not merely "also busy".
         neighbours = NEIGHBOURS.get(node_id, [])
         elevated_neighbours = sum(
             1 for n in neighbours
-            if n in bases and (bases[n]["base_score"] >= _ELEVATED_BASE or bases[n]["is_anomaly"])
+            if n in bases
+            and bases[n]["dominant_hazard"] == base["dominant_hazard"]
+            and (bases[n]["base_score"] >= _ELEVATED_BASE or bases[n]["is_anomaly"])
         )
         self_elevated = base["base_score"] >= _ELEVATED_BASE or base["is_anomaly"]
-        correlated = self_elevated and elevated_neighbours >= 2
-        mesh_multiplier = _MESH_MULTIPLIER if correlated else 1.0
+        corroborable = len(neighbours) >= _MIN_NEIGHBOURS_TO_CORROBORATE
+        if not self_elevated:
+            corroboration = QUIET
+        elif not corroborable:
+            corroboration = UNAVAILABLE
+        elif elevated_neighbours >= _MIN_NEIGHBOURS_TO_CORROBORATE:
+            corroboration = CORROBORATED
+        elif elevated_neighbours == 0:
+            corroboration = UNCORROBORATED
+        else:
+            corroboration = PARTIAL
+        correlated = corroboration == CORROBORATED
+        mesh_multiplier = {CORROBORATED: _MESH_MULTIPLIER,
+                           UNCORROBORATED: _UNCORROBORATED_MULTIPLIER}.get(corroboration, 1.0)
 
-        score = min(100.0, base["base_score"] * base["ai_multiplier"] * mesh_multiplier)
+        # Round once, up front, so the stored score, the band and the text a
+        # judge reads all agree (79.96 must not be WARNING with "80/100").
+        score = round(min(100.0, base["base_score"] * base["ai_multiplier"] * mesh_multiplier), 1)
         level = risk_level(score)
-        explanation = _explanation(reading, base, score, correlated, elevated_neighbours)
+        explanation = _explanation(reading, base, score, corroboration,
+                                   elevated_neighbours, len(neighbours))
 
         results.append({
             "node_id": node_id,
-            "score": round(score, 1),
+            "score": score,
             "level": level,
             "temp_sub": base["temp_sub"],
             "humidity_sub": base["humidity_sub"],
@@ -269,6 +364,8 @@ def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
             "mesh_multiplier": mesh_multiplier,
             "correlated": correlated,
             "correlated_count": elevated_neighbours,
+            "corroboration": corroboration,
+            "mesh_degree": len(neighbours),
             "top_factors": base["top_factors"],
             "dominant_hazard": base["dominant_hazard"],
             "explanation": explanation,
@@ -287,8 +384,15 @@ def maybe_alert(reading: dict, risk: dict) -> bool:
         return False
 
     hazard = risk["dominant_hazard"]
-    alert_type = hazard if hazard in ("flood", "smog", "heatwave", "storm") else "risk"
-    severity = "critical" if risk["level"] == CRITICAL else "warning"
+    if risk.get("corroboration") == UNCORROBORATED:
+        # An uncorroborated reading must not raise the hazard's playbook: the
+        # most likely explanation is a broken sensor, and telling a site team
+        # to clear drains on the word of one unconfirmed node is the failure
+        # this project exists to avoid.
+        alert_type, severity = "sensor-check", "warning"
+    else:
+        alert_type = hazard if hazard in HAZARDS else "risk"
+        severity = "critical" if risk["level"] == CRITICAL else "warning"
 
     recent = get_recent_alert(reading["node_id"], alert_type, ALERT_COOLDOWN_SECONDS)
     if recent is not None and recent["severity"] == severity:

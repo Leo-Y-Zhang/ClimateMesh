@@ -10,13 +10,12 @@ maintainer.
 Please do not open a public issue for a security problem, and please do not
 post details publicly before they have been addressed.
 
-No email address is published for this. Clause 10.5 of the licence states that
-contact should be made through the hosting platform account, and private
-vulnerability reporting is that channel.
+No email address is published for this; private vulnerability reporting on
+the repository is the contact channel.
 
 ## Scope
 
-These are personal projects published for evaluation, not operated services.
+This is a student project published for evaluation, not an operated service.
 There is no production deployment, no user data, and no infrastructure behind
 this repository. Reports about the code itself are welcome; there is no bug
 bounty and no service-level commitment.
@@ -28,7 +27,7 @@ team, so no response time is guaranteed.
 
 ## A note on running this code
 
-The licence permits you to run the work locally to evaluate or verify it. It is
-provided as-is, with no warranty, and should not be relied on for any
-safety-critical, financial, medical or legal decision. See sections 7 and 8 of
-the LICENSE.
+The software is MIT-licensed and provided as-is, with no warranty. It is a
+student project and decision-support demonstrator: it should not be relied on
+for any safety-critical decision, and its alerts always defer to official
+emergency guidance.

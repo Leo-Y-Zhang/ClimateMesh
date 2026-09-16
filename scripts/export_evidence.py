@@ -152,7 +152,13 @@ def main() -> int:
     }
     (OUT_DIR / "run_summary.json").write_text(json.dumps(summary, indent=2))
 
-    print(f"[evidence] Wrote 5 files to {OUT_DIR}")
+    # Print the folder relative to the project, not the machine's absolute
+    # path: evidence output is copied into write-ups and screenshots.
+    try:
+        shown = OUT_DIR.relative_to(Path(__file__).resolve().parent.parent)
+    except ValueError:
+        shown = OUT_DIR
+    print(f"[evidence] Wrote 5 files to {shown}/")
     print(f"           readings={summary['totals']['readings']} "
           f"risk_scores={summary['totals']['risk_scores']} "
           f"alerts={num_alerts} nodes_online={num_nodes}")

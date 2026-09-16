@@ -5,7 +5,14 @@ echo   Climate Mesh - Decentralised Monitor
 echo ============================================
 echo.
 echo Installing dependencies (first run only)...
-pip install -r "%~dp0requirements.txt" -q
+python -m pip install -r "%~dp0requirements.txt" -q
+if errorlevel 1 (
+  echo.
+  echo Could not install the requirements. Is Python 3.11+ installed and on PATH?
+  echo Download it from https://www.python.org/downloads/ and tick "Add python.exe to PATH".
+  pause
+  exit /b 1
+)
 echo.
 echo Starting the mesh (deterministic demo: simulation + risk engine)...
 start "" cmd /k "cd /d "%~dp0" && python run.py --mode demo"

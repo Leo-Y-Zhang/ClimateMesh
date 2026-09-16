@@ -94,7 +94,10 @@ def effective_source_from_readings(sources) -> str:
     but no device read, this stays ``"simulation"`` so the dashboard never shows
     a false physical-sensor provenance.
     """
-    return "hardware" if "hardware" in set(sources or ()) else "simulation"
+    # ``sources`` may be a list, a set, a pandas Series or None. A Series
+    # must not be tested for truth (pandas raises), so build the set first.
+    present = set(sources) if sources is not None else set()
+    return "hardware" if "hardware" in present else "simulation"
 
 
 __all__ = [

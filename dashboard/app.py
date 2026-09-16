@@ -10,8 +10,11 @@ prominently so nobody mistakes simulated or API data for physical-sensor data.
 from __future__ import annotations
 
 import json
+import math
+import re
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -35,6 +38,106 @@ from sensors.hardware_status import detect
 from simulation.scenarios import SCENARIO_INFO, SCENARIOS
 
 DEMO_CONTROL_PATH = Path(__file__).parent.parent / "data" / "demo_control.json"
+
+# Approximate courses of the main waterways through Greater London, used only
+# for orientation on the tile-free offline basemap (they are hand-traced, not
+# surveyed). Each is a list of (latitude, longitude) points west/north to east.
+_WATERWAYS: dict[str, list[tuple[float, float]]] = {
+    "River Thames": [
+        (51.463, -0.320), (51.485, -0.285), (51.470, -0.250), (51.465, -0.215),
+        (51.475, -0.185), (51.480, -0.160), (51.487, -0.135), (51.502, -0.122),
+        (51.508, -0.100), (51.507, -0.075), (51.500, -0.050), (51.490, -0.020),
+        (51.503, -0.005), (51.487, 0.005), (51.492, 0.025), (51.496, 0.040),
+        (51.494, 0.070), (51.505, 0.100),
+    ],
+    "River Lea": [
+        (51.610, -0.045), (51.585, -0.035), (51.560, -0.023), (51.545, -0.012),
+        (51.530, -0.005), (51.515, 0.002), (51.508, 0.008),
+    ],
+    "River Wandle": [
+        (51.462, -0.190), (51.450, -0.185), (51.435, -0.175), (51.415, -0.168),
+        (51.400, -0.165),
+    ],
+    "Regent's Canal": [
+        (51.523, -0.184), (51.533, -0.165), (51.541, -0.145), (51.535, -0.120),
+        (51.532, -0.100), (51.528, -0.075), (51.520, -0.055), (51.512, -0.038),
+    ],
+}
+
+# Where each waterway's name sits on the tile-free map (latitude, longitude),
+# chosen to stay clear of the node labels.
+_WATERWAY_LABEL_AT = {
+    "River Thames": (51.463, -0.320),
+    "River Lea": (51.610, -0.045),
+    "River Wandle": (51.400, -0.165),
+    "Regent's Canal": (51.530, -0.078),
+}
+
+# Label placement for the tile-free map: nodes that sit close together get
+# labels on different sides so the names do not overlap.
+_LABEL_POS = {
+    "HYDE-PARK": "bottom center", "CENTRAL-LDN": "bottom right",
+    "REGENTS-CANAL": "top left", "CAMDEN": "top center",
+    "CANARY-WHARF": "bottom right", "GREENWICH": "bottom center",
+    "STRATFORD": "top right", "VICTORIA-PARK": "top left",
+    "RIVER-LEA": "top right", "WALTHAMSTOW": "top center",
+    "THAMES-BARRIER": "top center", "ILFORD": "top center",
+    "LEWISHAM": "bottom center", "DULWICH": "bottom center",
+    "BRIXTON": "bottom left", "PUTNEY": "bottom center",
+    "RIVER-WANDLE": "bottom right", "WIMBLEDON": "bottom center",
+    "RICHMOND-PARK": "bottom center", "HAMPSTEAD": "top center",
+}
+
+
+def _short_name(name: str) -> str:
+    """'Regent's Canal (Little Venice)' -> \"Regent's Canal\" for map labels."""
+    return re.sub(r"\s*\(.*\)\s*$", "", str(name))
+
+
+def _offline_map(df: pd.DataFrame):
+    """Tile-free map: labelled nodes over the main waterways, no internet needed.
+
+    Plotly's map traces cannot draw text without a glyph server, so this is a
+    plain scatter with latitude/longitude axes, scaled so that a kilometre is
+    the same length north-south and east-west at London's latitude.
+    """
+    fig = go.Figure()
+    for name, pts in _WATERWAYS.items():
+        fig.add_trace(go.Scatter(
+            x=[p[1] for p in pts], y=[p[0] for p in pts], mode="lines",
+            line=dict(width=7 if name == "River Thames" else 3.5, color="#a9cde6",
+                      shape="spline", smoothing=0.6),
+            hoverinfo="skip", showlegend=False, name=name))
+        # Name the waterway away from the node that shares its name.
+        lat, lon = _WATERWAY_LABEL_AT.get(name, pts[0])
+        fig.add_annotation(x=lon, y=lat, text=name, showarrow=False,
+                           font=dict(size=10, color="#5b8db8", family="sans-serif"),
+                           xanchor="left", yanchor="bottom", xshift=4, yshift=2, opacity=0.9)
+    fig.add_trace(go.Scatter(
+        x=df["longitude"], y=df["latitude"], mode="markers+text",
+        text=[_short_name(n) for n in df["node_name"]],
+        textposition=[_LABEL_POS.get(n, "top center") for n in df["node_id"]],
+        textfont=dict(size=11, color="#2d3748", family="sans-serif"),
+        marker=dict(
+            size=12 + df["score"].clip(lower=0, upper=100) * 0.2,
+            color=df["score"], cmin=0, cmax=100,
+            colorscale=[[0, "#2ecc71"], [0.33, "#f1c40f"], [0.66, "#e67e22"], [1, "#e74c3c"]],
+            colorbar=dict(title="score", thickness=14, len=0.7),
+            line=dict(width=1.5, color="white"), opacity=0.92),
+        customdata=list(zip(df["node_id"], df["level"], df["score"].round(0), df["source"])),
+        hovertemplate="<b>%{text}</b> (%{customdata[0]})<br>risk %{customdata[2]}/100 · "
+                      "%{customdata[1]}<br>source: %{customdata[3]}<extra></extra>",
+        showlegend=False))
+    fig.add_annotation(xref="paper", yref="paper", x=0.01, y=0.01, showarrow=False,
+                       text="Offline basemap · waterways approximate · nodes are illustrative landmarks",
+                       font=dict(size=9, color="#8a94a6"), xanchor="left", yanchor="bottom")
+    lat0 = 51.5
+    fig.update_xaxes(visible=False, range=[-0.335, 0.125], fixedrange=False)
+    fig.update_yaxes(visible=False, range=[51.385, 51.625],
+                     scaleanchor="x", scaleratio=1 / math.cos(math.radians(lat0)))
+    fig.update_layout(height=560, margin=dict(l=0, r=0, t=0, b=0),
+                      plot_bgcolor="#f6f8fb", paper_bgcolor="white", hovermode="closest")
+    return fig
 
 st.set_page_config(page_title="Climate Mesh", page_icon="🌍", layout="wide")
 init_db()
@@ -66,8 +169,29 @@ def _active_scenario() -> str:
     return "normal"
 
 
-def _scatter_map(df: pd.DataFrame):
-    """Build a risk-coloured map, tolerating both old and new plotly APIs."""
+def _local_hms(ts: str) -> str:
+    """Render a stored UTC ISO timestamp as local wall-clock HH:MM:SS.
+
+    Rows are stored in UTC; a judge in the UK during BST would otherwise see
+    every alert stamped an hour early with nothing to explain why.
+    """
+    try:
+        return datetime.fromisoformat(ts).astimezone().strftime("%H:%M:%S")
+    except (TypeError, ValueError):
+        return str(ts)
+
+
+def _scatter_map(df: pd.DataFrame, offline: bool = False):
+    """Build a risk-coloured map, tolerating both old and new plotly APIs.
+
+    ``offline=True`` returns the tile-free labelled map from
+    :func:`_offline_map`, so the map works with no internet at all (the
+    street-map tiles are the only part of the dashboard that ever needs a
+    connection).
+    """
+    if offline:
+        return _offline_map(df)
+    style = "carto-positron-nolabels"
     common = dict(
         lat="latitude", lon="longitude", color="score", size="size",
         color_continuous_scale=["#2ecc71", "#f1c40f", "#e67e22", "#e74c3c"],
@@ -77,10 +201,10 @@ def _scatter_map(df: pd.DataFrame):
                     "source": True, "latitude": False, "longitude": False, "size": False},
     )
     try:  # plotly >= 5.24 (maplibre)
-        fig = px.scatter_map(df, map_style="carto-positron-nolabels", **common)
+        fig = px.scatter_map(df, map_style=style, **common)
     except AttributeError:  # older plotly (mapbox)
-        fig = px.scatter_mapbox(df, mapbox_style="carto-positron-nolabels", **common)
-    fig.update_layout(height=520, margin=dict(l=0, r=0, t=0, b=0))
+        fig = px.scatter_mapbox(df, mapbox_style=style, **common)
+    fig.update_layout(height=560, margin=dict(l=0, r=0, t=0, b=0))
     return fig
 
 
@@ -166,8 +290,11 @@ with st.sidebar:
     else:
         st.info("Waiting for data…")
     st.divider()
-    refresh = st.checkbox("Auto-refresh (2s)", value=True)
-    st.caption("Climate Mesh v2.0 · honest by design")
+    offline_map = st.checkbox("Offline basemap (no map tiles)", value=False, key="offline_map",
+                              help="Tick when the Pi has no internet: the Live Map then draws the "
+                                   "20 labelled nodes over the main waterways instead of street tiles.")
+    refresh = st.checkbox("Auto-refresh (2s)", value=True, key="auto_refresh")
+    st.caption("Climate Mesh · honest by design")
 
 # --- Tabs -----------------------------------------------------------------
 tabs = st.tabs([
@@ -185,9 +312,15 @@ with tabs[0]:
         st.markdown("**Provenance of mapped nodes:** "
                     + sources_legend_html(sorted(merged["source"].unique())),
                     unsafe_allow_html=True)
-        st.plotly_chart(_scatter_map(merged), use_container_width=True)
+        # A key that changes with the scenario/basemap remounts the chart, so the
+        # WebGL map is drawn fresh instead of patched in place (an in-place
+        # update after a scenario switch can leave the map canvas blank).
+        st.plotly_chart(_scatter_map(merged, offline=offline_map), use_container_width=True,
+                        key=f"live-map-{active_scenario}-{'offline' if offline_map else 'tiles'}")
         st.caption("Marker colour & size = risk score (green safe → red critical). "
-                   "Hover a node to see its data source.")
+                   "Hover a node to see its name and data source. Street tiles need "
+                   "internet; tick **Offline basemap** in the sidebar for a labelled map over "
+                   "the main waterways that needs no connection.")
     else:
         st.info("Map appears once the engine is running.")
 
@@ -196,7 +329,9 @@ with tabs[1]:
     if not merged.empty:
         avg_risk = risks_df["score"].mean()
         highest = risks_df.iloc[0]
-        active_alerts = len([a for a in alerts if a["severity"] in ("warning", "critical")])
+        # "Active" = nodes currently at WARNING or CRITICAL, not a count of the
+        # alert log (which grows every cooldown window while a scenario runs).
+        active_alerts = int(risks_df["level"].isin(["WARNING", "CRITICAL"]).sum())
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Average risk", f"{avg_risk:.1f}/100")
         m2.metric("Highest-risk node", highest["node_id"], f"{highest['score']:.0f}/100")
@@ -240,12 +375,12 @@ with tabs[1]:
         if alerts:
             for a in alerts[:12]:
                 icon = "🔴" if a["severity"] == "critical" else "🟠"
-                ts = a["timestamp"].split("T")[1][:8] if "T" in a["timestamp"] else a["timestamp"]
+                ts = _local_hms(a["timestamp"])
                 st.markdown(f"{icon} **[{ts}]** `{a['node_id']}` — {a['message']}")
         else:
             st.success("No active alerts — all nodes within safe parameters.")
     else:
-        st.info("Waiting for sensor data…")
+        st.info("Waiting for readings…")
 
 # === NODE DETAIL ==========================================================
 with tabs[2]:
@@ -280,21 +415,23 @@ with tabs[2]:
 
         if not rrow.empty:
             r = rrow.iloc[0]
-            st.metric("Risk score", f"{r['score']:.0f}/100", r["level"])
+            st.metric("Risk score", f"{r['score']:.0f}/100", r["level"], delta_color="off")
             st.markdown(f"**Why:** {r['explanation']}")
             subs = {"Temperature": r["temp_sub"], "Humidity": r["humidity_sub"],
                     "Air quality": r["aqi_sub"], "Water level": r["water_sub"],
                     "Wind": r["wind_sub"], "Pressure": r["pressure_sub"]}
             sub_fig = px.bar(x=list(subs.keys()), y=list(subs.values()),
-                             range_y=[0, 100], title="Risk breakdown by factor (0–100)")
+                             range_y=[0, 100], title="Risk breakdown by factor (0–100)",
+                             labels={"x": "Factor", "y": "Sub-score (0–100)"})
             sub_fig.update_layout(height=280, margin=dict(t=40, b=10))
             st.plotly_chart(sub_fig, use_container_width=True)
 
         history = get_node_history(node_id, minutes=10)
         if len(history) > 1:
             hist = pd.DataFrame(history)
-            hist["timestamp"] = pd.to_datetime(hist["timestamp"])
-            st.subheader("Recent history (last 10 min)")
+            hist["timestamp"] = (pd.to_datetime(hist["timestamp"], utc=True)
+                                 .dt.tz_convert(datetime.now().astimezone().tzinfo))
+            st.subheader("Recent history (last 10 min, local time)")
             for ch, unit in [("temperature", "°C"), ("water_level", "m"),
                              ("air_quality", "AQI"), ("barometric_pressure", "hPa")]:
                 line = px.line(hist, x="timestamp", y=ch, title=f"{ch.replace('_', ' ').title()} ({unit})")
@@ -303,7 +440,7 @@ with tabs[2]:
         else:
             st.caption("History accumulates as the engine runs.")
     else:
-        st.info("Waiting for sensor data…")
+        st.info("Waiting for readings…")
 
 # === AI EXPLAINABILITY ====================================================
 with tabs[3]:
@@ -312,7 +449,7 @@ with tabs[3]:
     if _training_mode == "historical":
         _train_desc = (
             "real ~30-day **Open-Meteo historical archive** (ERA5) hourly weather "
-            "for the Greater London area")
+            "for one representative central-London point")
     elif _training_mode == "synthetic_fallback":
         _train_desc = (
             "a **deterministic synthetic** normal distribution (historical archive "
@@ -330,7 +467,15 @@ with tabs[3]:
         if not anomalous.empty:
             for _, row in anomalous.head(12).iterrows():
                 tags = ", ".join(row["top_factors"]) if isinstance(row["top_factors"], list) else ""
-                mesh = " · 🔗 mesh-correlated" if row.get("correlated") else " · isolated"
+                mesh = {
+                    "corroborated": f" · 🔗 corroborated by {row.get('correlated_count', 0)}"
+                                    f" of {row.get('mesh_degree', 0)} neighbours",
+                    "partial": f" · ◐ {row.get('correlated_count', 0)} of"
+                               f" {row.get('mesh_degree', 0)} neighbours agree",
+                    "uncorroborated": f" · ⚠ uncorroborated — no neighbour of"
+                                      f" {row.get('mesh_degree', 0)} agrees (check the sensor)",
+                    "unavailable": " · ○ cannot be corroborated (fewer than two neighbours in range)",
+                }.get(row.get("corroboration"), " · isolated")
                 st.markdown(
                     f"**{row['node_id']}** — anomaly {row['anomaly_score']:.2f} · "
                     f"AI ×{row['ai_multiplier']:.2f}{mesh}  \n"
@@ -379,7 +524,7 @@ with tabs[5]:
     # Provenance is derived from ACTUAL DATA, not driver-library presence. A
     # library being importable does NOT mean a device was read, so the badge is
     # "hardware" ONLY when a live reading actually carries source=="hardware".
-    _sources_in_view = readings_df["source"] if not readings_df.empty else []
+    _sources_in_view = readings_df["source"].tolist() if not readings_df.empty else []
     _hardware_reading_present = "hardware" in set(_sources_in_view)
     _effective_source = effective_source_from_readings(_sources_in_view)
     st.markdown("**Current node provenance:** " + source_badge_html(_effective_source),
@@ -405,7 +550,7 @@ with tabs[5]:
         "adc_air_quality_library": status["adc_air_quality_available"],
     })
     st.markdown(
-        "### Planned Vernier adapter pathway\n"
+        "### Vernier adapter pathway (implemented, awaiting a device)\n"
         "- `sensors/vernier_adapter.py` already implements the hardware path. When a "
         "Vernier Go Direct Weather sensor is connected over USB, its node emits "
         "`source=\"hardware\"` readings while the rest of the mesh stays simulated.\n"
@@ -425,10 +570,11 @@ with tabs[5]:
 with tabs[6]:
     st.subheader("Climate Mesh — competition pitch")
     st.markdown(
-        "**1. Real-world problem.** Flood-zone maps put the local area at risk, but the nearest "
-        "official gauge is kilometres away — the areas most at risk aren't being watched. "
-        "Over 90% of weather-related deaths since 1970 occurred where early-warning "
-        "coverage was inadequate (WMO; figure not independently verified).\n\n"
+        "**1. Real-world problem.** Official flood-zone maps say a neighbourhood is at risk, "
+        "but the nearest official gauge can be kilometres away — the places most at risk "
+        "are the least watched. The WMO reports that countries with limited early-warning "
+        "coverage suffer nearly six times the disaster mortality of those with substantial "
+        "coverage (WMO/UNDRR, *Global Status of Multi-Hazard Early Warning Systems*, 2023).\n\n"
         "**2. Technical innovation.** A decentralised mesh of 20 London nodes, an "
         "explainable Isolation Forest anomaly model, mesh correlation (nearby nodes "
         "confirming a trend escalate risk), and plain-English alerts with action playbooks.\n\n"

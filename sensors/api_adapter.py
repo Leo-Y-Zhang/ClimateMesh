@@ -13,6 +13,7 @@ simulation — it never silently invents data and calls it live.
 
 from __future__ import annotations
 
+import http.client
 import json
 import urllib.error
 import urllib.parse
@@ -25,8 +26,8 @@ from simulation.engine import _heat_index, _wind_chill
 OPEN_METEO_FORECAST = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_AIR = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
-# Per-environment sensitivity converting 24h precipitation (mm) to a water
-# level proxy (m). River nodes respond most; urban least. Documented in the
+# Per-environment sensitivity converting today's forecast daily precipitation
+# total (mm, Open-Meteo ``precipitation_sum``) to a water level proxy (m). River nodes respond most; urban least. Documented in the
 # write-up as a real design decision.
 _PRECIP_SENSITIVITY = {
     "river": 0.15, "park": 0.08, "residential": 0.07, "school": 0.06, "urban": 0.05,
@@ -46,7 +47,11 @@ def _http_get_json(url: str, params: dict, timeout: float = 8.0) -> dict:
     try:
         with urllib.request.urlopen(full, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as e:
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError,
+            http.client.HTTPException) as e:
+        # URLError covers HTTPError; ValueError covers a non-JSON body (a
+        # captive-portal login page on school Wi-Fi, a proxy block page) and
+        # bad UTF-8; HTTPException covers a truncated/malformed response.
         raise ApiUnavailable(str(e)) from e
 
 
@@ -94,11 +99,18 @@ class ApiAdapter(SensorAdapter):
         air_list = air if isinstance(air, list) else [air]
         if not weather_list or not air_list:
             raise ApiUnavailable("live response contained no locations")
+        # Every node must get its OWN location's data. Padding a short
+        # response with another location's values and stamping it "api"
+        # would be invented live data, so a short response is unavailable.
+        if len(weather_list) != len(NODES) or len(air_list) != len(NODES):
+            raise ApiUnavailable(
+                f"live response returned {len(weather_list)} weather / "
+                f"{len(air_list)} air-quality locations for {len(NODES)} nodes")
 
         readings = []
         for idx, node in enumerate(NODES):
-            w = weather_list[idx] if idx < len(weather_list) else weather_list[-1]
-            a = air_list[idx] if idx < len(air_list) else air_list[-1]
+            w = weather_list[idx]
+            a = air_list[idx]
             cur = w.get("current", {})
             # A live reading must come from the response. A placeholder here
             # would be stamped source="api" and shown behind a "Live API"

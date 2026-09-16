@@ -32,6 +32,10 @@ def _get_conn() -> sqlite3.Connection:
     if getattr(_local, "conn", None) is None or getattr(_local, "path", None) != str(path):
         conn = sqlite3.connect(str(path), timeout=10)
         conn.execute("PRAGMA journal_mode=WAL")
+        # NORMAL is durable enough under WAL (a power cut can lose only the
+        # last transaction, never corrupt the file) and spares the Pi's SD
+        # card an fsync on every commit.
+        conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA busy_timeout=5000")
         conn.row_factory = sqlite3.Row
         _local.conn = conn
@@ -124,6 +128,14 @@ def init_db() -> None:
             conn.execute(f"ALTER TABLE alerts ADD COLUMN {_col} {_decl}")
         except sqlite3.OperationalError:
             pass  # column already present
+    # And for risk scores: a score is acted on, so it must carry how far the
+    # mesh could vouch for it, not just the number.
+    for _col, _decl in (("corroboration", "TEXT"), ("mesh_degree", "INTEGER"),
+                        ("correlated_count", "INTEGER")):
+        try:
+            conn.execute(f"ALTER TABLE risk_scores ADD COLUMN {_col} {_decl}")
+        except sqlite3.OperationalError:
+            pass  # column already present
     conn.commit()
 
 
@@ -150,6 +162,28 @@ def insert_reading(reading: dict) -> None:
     conn.commit()
 
 
+def insert_readings(readings: list[dict]) -> None:
+    """Insert a whole tick of readings in ONE transaction (one fsync, not 20)."""
+    conn = _get_conn()
+    with conn:
+        for r in readings:
+            conn.execute(
+                """INSERT INTO sensor_readings
+                   (node_id, node_name, environment, latitude, longitude, temperature,
+                    humidity, air_quality, water_level, wind_speed, wind_chill,
+                    heat_index, barometric_pressure, source, is_simulated, quality_flag,
+                    scenario, timestamp)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (r["node_id"], r.get("node_name"), r["environment"],
+                 r.get("latitude"), r.get("longitude"), r["temperature"],
+                 r["humidity"], r["air_quality"], r["water_level"],
+                 r["wind_speed"], r["wind_chill"], r["heat_index"],
+                 r["barometric_pressure"], r["source"],
+                 1 if r["is_simulated"] else 0, r["quality_flag"],
+                 r.get("scenario", "none"), r.get("timestamp") or _now()),
+            )
+
+
 def insert_risk_score(risk: dict) -> None:
     """Insert one risk result (the dict produced by the risk engine)."""
     conn = _get_conn()
@@ -157,15 +191,17 @@ def insert_risk_score(risk: dict) -> None:
         """INSERT INTO risk_scores
            (node_id, score, level, temp_sub, humidity_sub, aqi_sub, water_sub,
             wind_sub, pressure_sub, anomaly_score, ai_multiplier, mesh_multiplier,
-            correlated, top_factors, explanation, timestamp)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            correlated, top_factors, explanation, timestamp,
+            corroboration, mesh_degree, correlated_count)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (risk["node_id"], risk["score"], risk["level"], risk["temp_sub"],
          risk["humidity_sub"], risk["aqi_sub"], risk["water_sub"],
          risk.get("wind_sub", 0.0), risk.get("pressure_sub", 0.0),
          risk.get("anomaly_score", 0.0), risk.get("ai_multiplier", 1.0),
          risk.get("mesh_multiplier", 1.0), 1 if risk.get("correlated") else 0,
          json.dumps(risk.get("top_factors", [])), risk.get("explanation", ""),
-         _now()),
+         _now(), risk.get("corroboration", "quiet"),
+         risk.get("mesh_degree", 0), risk.get("correlated_count", 0)),
     )
     conn.commit()
 

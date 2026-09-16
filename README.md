@@ -21,8 +21,11 @@ with no cloud subscription.
   all emit the *same* reading shape, so the system is **sensor-ready without
   being sensor-dependent** — a real node joins the mesh by adding one adapter,
   and nothing downstream changes.
-- **Mesh correlation as trust:** a 1.2× escalation fires only when **2+
-  adjacent nodes** agree, so a single glitching node cannot cry wolf.
+- **Mesh agreement as a two-sided trust signal:** a 1.2× escalation fires
+  only when **2+ adjacent nodes** agree for the same hazard, and a node that
+  is elevated while *no* neighbour agrees is damped (0.75×) and reported as a
+  **sensor-check**, not as the hazard — so a single glitching node cannot cry
+  wolf. Both directions are tested (`tests/test_corroboration.py`).
 - **Provenance-first honesty:** every reading, dashboard panel, alert, and
   export carries its data source (`hardware / api / demo / simulation`) and a
   quality flag — honesty is a designed-in feature, not a disclaimer.
@@ -32,8 +35,8 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **144/144 automated tests pass**; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
-- The 30-second demo tour (`python scripts/demo_tour.py`) discriminates
+- **192/192 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
   100.0, 10 alerts), and heatwave/smog/storm each escalate their own hazard
@@ -46,9 +49,13 @@ not field measurements; no physical sensor has been validated yet)*:
 > **simulated** and/or **live API** data. Every reading shows its source
 > (`simulation` / `demo` / `api` / `hardware`) so nothing is ever overstated.
 
-Built by **two sixth-form students** for the PA Raspberry Pi
-Competition 2026 — theme *Building a Positive Human Future* (Safer Societies &
-Sustainable World).
+Built by **Luis Yu and Leo Zhang**, two sixth-form students (years 12–13
+category), for the PA Raspberry Pi Competition 2026/27 — theme *Building a
+Positive Human Future* (Safer Societies & Sustainable World).
+
+> **Submitting this project?** Everything a teacher needs — the written entry,
+> entry-form answers and where the photos go — is in
+> [`SUBMISSION_PACK/`](SUBMISSION_PACK/README_FOR_TEACHER.md).
 
 ---
 
@@ -158,14 +165,20 @@ Vernier Go Direct Weather sensor is connected over USB, that node switches to
 
 ## Quick start (any computer)
 
-**Prerequisites:** Python **3.13** (what CI runs, and the only version the suite
-is verified on) and `git`. Nothing else — no compiler, database, solver, cloud
-account or API key. Every requirement publishes a prebuilt wheel for Linux,
-Windows and macOS, so the install needs no build toolchain, and the demo runs
-entirely offline. The pinned dependency set also resolves on Python 3.9–3.12
-and nothing in the tree uses syntax newer than 3.8, so an older interpreter
-will very likely work; it is just not tested here. The download is dominated
-by scikit-learn, pandas and numpy.
+**Prerequisites:** Python **3.11, 3.12 or 3.13** and `git`. The full test
+suite, the demo tour and the judge validation have been run on all three
+versions with identical output; CI runs 3.11 (what Raspberry Pi OS Bookworm
+ships) and 3.13 (what the Trixie-based release ships) on x86-64, plus 3.11 on
+a 64-bit Arm runner that installs prebuilt wheels only. Nothing else is needed
+— no compiler, database, solver, cloud account or API key. Every requirement
+publishes a prebuilt wheel for Linux, Windows and macOS, so the install needs
+no build toolchain, and the demo runs entirely offline. Nothing in the tree
+uses syntax newer than 3.8, so Python 3.9–3.10 will very likely work too; they
+are just not tested. The download is dominated by scikit-learn, pandas and
+numpy.
+
+> **Got this as a zip?** Unzip it and `cd` into the folder — skip the
+> `git clone` line below. Everything else is identical.
 
 ```bash
 git clone https://github.com/Leo-Y-Zhang/ClimateMesh.git
@@ -185,7 +198,8 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 144 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 192 tests + 2 demo cycles + export
+python scripts/evaluate.py         # detection and false-alarm rates vs a thresholds-only baseline
 ```
 
 **One-click (Windows):** double-click **`start.bat`** — it installs deps, starts the
@@ -251,10 +265,38 @@ The `--ai-training` flag selects the anomaly model's training data:
 `synthetic` (default, offline), `historical` (real Open-Meteo ERA5 archive), or
 `auto` (historical with a deterministic synthetic fallback when offline).
 
-Scenarios can also be triggered live from the dashboard sidebar while the engine
-runs.
+Scenarios can also be switched live from the dashboard sidebar while the engine
+runs — in every mode, `--judge-mode` included (judge mode freezes the simulation
+clock so each scenario shows the same deterministic frame; it does not lock the
+picker). In `simulation` mode, `--judge-mode` switches to the same seeded
+generator as `demo`, so "screenshot-stable" is exactly what you get.
 
-## Screenshots to capture
+## Screenshots
+
+Captured from this exact tree in **demo / judge mode** (flood scenario unless
+stated). Every panel self-labels its data source — here **🎬 Digital Twin
+(Demo)** — so nothing is passed off as a real measurement. The full set,
+including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
+
+| | |
+|---|---|
+| **Live Map (flood)** — the 20 nodes coloured and sized by risk, here on the tile-free **Offline basemap** (Thames outline for orientation) | **Live Map (heatwave)** — after clicking *Heatwave* in the sidebar: the urban nodes light up instead of the river nodes |
+| ![Live Map, flood, demo data, offline basemap](docs/screenshots/live-map-flood-demo.png) | ![Live Map, heatwave, demo data, offline basemap](docs/screenshots/live-map-heatwave-demo.png) |
+| **Network Overview** — fleet risk, highest node, active alerts, risk-by-node and distribution charts | **Node Detail** — Regent's Canal: readings, provenance badges, the plain-English *Why:* line and the six sub-scores |
+| ![Network Overview, flood, demo data](docs/screenshots/network-overview-flood-demo.png) | ![Node Detail, flood, demo data](docs/screenshots/node-detail-flood-demo.png) |
+| **AI Explainability** — which nodes the Isolation Forest flagged and why | **Hardware Readiness** — honest "no physical sensor detected" state |
+| ![AI Explainability, flood, demo data](docs/screenshots/ai-explainability-flood-demo.png) | ![Hardware Readiness, demo data](docs/screenshots/hardware-readiness-flood-demo.png) |
+| **Evidence & Validation** — run metadata, row counts, export commands | **Competition Pitch** |
+| ![Evidence and Validation, demo data](docs/screenshots/evidence-validation-flood-demo.png) | ![Competition Pitch](docs/screenshots/competition-pitch-flood-demo.png) |
+| **Network Overview after clicking *Heatwave* in the sidebar** — live scenario switching | **`python scripts/judge_validate.py`** — the one-command PASS table |
+| ![Network Overview, heatwave, demo data](docs/screenshots/network-overview-heatwave-demo.png) | ![judge_validate.py terminal output](docs/screenshots/terminal-judge_validate.png) |
+
+Terminal evidence for `demo_tour.py`, `pytest`, `smoke_test.py` and
+`test_hardware_read.py` (FALLBACK SIMULATION, no sensor attached) is in the
+same folder. With internet, untick **Offline basemap** and the same nodes sit
+on a street map.
+
+### What the screenshots show (and how to retake them)
 
 The dashboard's 7 tabs are all screenshot-worthy — see
 [docs/evidence_checklist.md](docs/evidence_checklist.md). In short:
@@ -264,7 +306,7 @@ Explainability**, **Evidence & Validation**, **Hardware Readiness**, **Competiti
 Pitch**. Every panel carries a provenance badge — **📡 Physical Sensor**, **🌐 Live
 API**, **🎬 Digital Twin (Demo)** or **💻 Offline Simulation** — plus a quality
 badge (✅ ok · ≈ estimated · 🕒 stale · ⚠️ missing), so each shot self-labels its
-data source. Two more terminal screenshots round out the evidence:
+data source. Two terminal screenshots round out the evidence:
 
 - `python scripts/judge_validate.py` → the compact PASS/FAIL validation table.
 - `python scripts/test_hardware_read.py` → **REAL HARDWARE** vs **FALLBACK
@@ -328,6 +370,8 @@ ClimateMesh/
     playbooks.py             # community action playbooks per hazard
   data/database.py           # SQLite storage (readings, risk, alerts, runs)
   dashboard/app.py           # 7-tab Streamlit dashboard
+  dashboard/badges.py        # provenance + quality badge wording (pure, unit-tested)
+  data/sensor_config.json    # optional: which node the physical sensor represents
   scripts/
     judge_validate.py        # ONE command: smoke + pytest + demos + export + table
     demo_tour.py             # ONE command: all 5 scenarios, deterministic summary table
@@ -336,8 +380,10 @@ ClimateMesh/
     export_evidence.py       # CSV + JSON evidence export + source-count table
     run_validation.py        # one-command pass/fail validation
     smoke_test.py            # fast end-to-end check
+    pi_benchmark.py          # measures cycle time + memory on this machine, prints a sentence
   tests/                     # pytest suite
-  docs/                      # hardware driver setup, integration plan, evidence checklist
+  docs/                      # hardware driver setup, integration plan, evidence checklist, screenshots
+  SUBMISSION_PACK/           # write-up (.md/.docx/.pdf), entry-form answers, figures, photos, build tooling
 ```
 
 ## Known limitations (honest by design)
@@ -349,7 +395,8 @@ We label exactly what this is and is not, so judges never have to guess:
   the layout uses (river, residential, urban, park) and the mesh-neighbour logic (`config/nodes.py`). They are not deployment
   sites, and no reading in this repository was measured at any of them.
 - **One physical node, only when connected.** Hardware support is implemented and
-  unit-tested for its fallback/labelling behaviour (`sensors/vernier_adapter.py`,
+  tested end to end with a stand-in device object that mimics Vernier's helper
+  (`tests/test_hardware_stand_in_device.py`; see `sensors/vernier_adapter.py`,
   `docs/hardware_driver_setup.md`), but **not yet validated against a physical
   device**. A node emits `source="hardware"` **only** after a Vernier device
   actually opens and is read. With no device attached, that node falls back to
@@ -395,7 +442,8 @@ training paths (`run.py --ai-training ...`):
 - **`synthetic` (default):** 2000 deterministic synthetic *normal* samples — no
   internet, used by CI, the smoke test, and `--once`. Fully reproducible.
 - **`historical` / `auto`:** ~30 days of **real** hourly Open-Meteo *archive*
-  (ERA5) weather + air quality for the Greater London area. The first fetch is
+  (ERA5) weather + air quality for one representative central-London point
+  (the CENTRAL-LDN node). The first fetch is
   cached to `ai/_archive_cache.json`, so repeat runs train offline. If the
   archive is unreachable it **falls back deterministically to synthetic** and
   records that as `training_mode = "synthetic_fallback"` — synthetic data is
@@ -407,15 +455,18 @@ reading the model returns an anomaly score (0–1), whether it is anomalous, and
 the channels deviating most from the **fitted** baseline. Unlike fixed
 thresholds, it flags an unusual **combination** of values *before* any single
 channel crosses a hard limit. A confirmed anomaly multiplies a node's risk by up
-to **1.5×**.
+to **1.5×** (measured range 1.25×–1.36×).
 
 ## How the risk score works
 
 For each node the engine computes six 0–100 hazard sub-scores — temperature,
 humidity, air quality, water level, wind, pressure — and combines them
-(worst hazard + 20% of the rest) into a 0–100 **base score**. It then applies:
+(worst hazard + 20% of the rest) into a 0–100 **base score**. Temperature and
+humidity are two-sided: a frosty morning is filed as a **cold** hazard with its
+own playbook, never as a "heatwave". It then applies:
 
-- **AI multiplier** (1.0–1.5×) when the Isolation Forest confirms an anomaly, and
+- **AI multiplier** (up to 1.5×; in practice 1.25–1.5× once the Isolation
+  Forest confirms an anomaly, and exactly 1.0× otherwise), and
 - **Mesh multiplier** (1.2×) when **2+ adjacent nodes** show the same trend — a
   single spike is trusted less than a correlated regional event.
 
@@ -450,14 +501,17 @@ never confused. See [docs/evidence_checklist.md](docs/evidence_checklist.md).
   `python run.py --mode demo --scenario flood --judge-mode`.
 - **`api` mode shows a fallback note** → no internet; it automatically uses
   simulation. This is expected and clearly labelled.
-- **Map doesn't render** → the bundled Streamlit/Plotly versions use OpenStreetMap
-  tiles (no API key). Ensure `pip install -r requirements.txt` completed.
+- **Map doesn't render** → the bundled Streamlit/Plotly versions use free
+  OpenStreetMap-based tiles (no API key). Ensure `pip install -r requirements.txt`
+  completed. The street tiles are the one thing that needs internet: tick
+  **Offline basemap** in the sidebar and the Live Map draws the 20 labelled
+  nodes over the Thames, Lea, Wandle and Regent's Canal instead, fully offline.
 - **`pytest: command not found`** → use `python -m pytest`.
 - **Reset everything** → `python scripts/reset_demo_db.py`.
 
 ## Competition notes
 
-Climate Mesh was built for the PA Raspberry Pi Competition 2026. Its
+Climate Mesh was built for the PA Raspberry Pi Competition 2026/27. Its
 competition strengths: an **evidence mode** for reproducible judging,
 **explainable alerts**, a **sensor-ready-without-sensors** pipeline, **community
 action playbooks**, **mesh correlation**, a **local digital twin**, and
@@ -468,10 +522,11 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (144 tests)
+pytest                               # the full unit-test suite (192 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION
+python scripts/pi_benchmark.py       # cycle time, training time, peak memory on this machine
 ```
 
 ## Roadmap
@@ -492,10 +547,9 @@ sections above with evidence:
 
 ## Credits
 
-Built by **two sixth-form students**.
+Built by **Luis Yu and Leo Zhang**, two sixth-form students.
 
 ## Licence
 
-Proprietary — All Rights Reserved. Copyright (c) 2026 Leo Y. Zhang.
-See [LICENSE](LICENSE) for the exact terms (read, run and evaluate locally;
-no reuse rights granted).
+MIT. Copyright (c) 2026 Luis Yu and Leo Zhang. See [LICENSE](LICENSE):
+anyone may run, study, copy and adapt it, with attribution.

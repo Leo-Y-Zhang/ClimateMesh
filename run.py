@@ -43,10 +43,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 from ai.anomaly_model import AnomalyDetector
 from backend.risk_engine import compute_all, maybe_alert, run_risk_engine
 from data.database import (
-    clear_old_data, get_latest_readings_per_node, init_db, insert_reading,
+    clear_old_data, get_latest_readings_per_node, init_db, insert_readings,
     insert_risk_score, record_run_start,
 )
 from sensors import create_adapter
+from sensors.api_adapter import ApiUnavailable
+from sensors.base import utc_now_iso
 from simulation.scenarios import SCENARIOS
 
 DEMO_CONTROL_PATH = Path(__file__).parent / "data" / "demo_control.json"
@@ -110,8 +112,7 @@ def _banner(mode: str, scenario: str, judge: bool, source: str, notes: list[str]
 def run_once(adapter, detector, scenario: str, tick: float) -> dict:
     """Run a single read -> risk -> alert cycle. Returns a small summary."""
     readings = adapter.read_all(scenario, tick)
-    for r in readings:
-        insert_reading(r)
+    insert_readings(readings)
     latest = get_latest_readings_per_node()
     results = compute_all(latest, detector)
     by_id = {r["node_id"]: r for r in results}
@@ -126,14 +127,35 @@ def run_once(adapter, detector, scenario: str, tick: float) -> dict:
 
 
 async def _sensor_loop(adapter, default_scenario: str, judge: bool, interval: float):
+    """Read every node each ``interval`` seconds and store the readings.
+
+    The scenario always follows the dashboard's control file (judge mode
+    freezes the simulation clock, not the scenario picker, so a judge can
+    still click between scenarios and get the same deterministic frame for
+    each). A live source that fails mid-run never takes the engine down: the
+    last good readings are re-stamped ``quality_flag="stale"`` and the loop
+    tries again next tick.
+    """
     import time
     start = time.time()
+    last_good: list[dict] = []
     while True:
-        scenario = default_scenario if judge else _read_scenario(default_scenario)
+        scenario = _read_scenario(default_scenario)
         tick = _JUDGE_TICK if judge else (time.time() - start)
-        readings = adapter.read_all(scenario, tick)
-        for r in readings:
-            insert_reading(r)
+        try:
+            # Live HTTP reads block for up to 2 x 8 s; keep them off the loop
+            # so the risk engine and dashboard data never stall behind them.
+            readings = await asyncio.to_thread(adapter.read_all, scenario, tick)
+            last_good = readings
+        except ApiUnavailable as e:
+            if not last_good:
+                print(f"[Sensors] live read failed ({e}); retrying next tick")
+                await asyncio.sleep(interval)
+                continue
+            print(f"[Sensors] live read failed ({e}); re-using last readings as STALE")
+            readings = [dict(r, quality_flag="stale", timestamp=utc_now_iso())
+                        for r in last_good]
+        insert_readings(readings)
         await asyncio.sleep(interval)
 
 
@@ -181,36 +203,48 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def wants_deterministic_data(mode: str, judge_mode: bool) -> bool:
+    """Judge mode promises screenshot-stable data, so it must use the seeded
+    demo generator even when the mode is plain ``simulation``. Live modes
+    (api/hardware/auto) keep their real values; judge mode only freezes the
+    clock for them."""
+    return mode == "demo" or (judge_mode and mode == "simulation")
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
-    # demo + judge both want deterministic data.
-    demo = args.mode == "demo"
-    init_db()
-
-    detector = AnomalyDetector().train(mode=args.ai_training, quiet=args.once)
-    adapter, notes = create_adapter(args.mode, demo=demo, seed=args.seed)
-    source = getattr(adapter, "source", "simulation")
-    scenario = args.scenario or "normal"
-    _write_scenario(scenario)
-    record_run_start(
-        args.mode, scenario, args.judge_mode, source, " | ".join(notes),
-        seed=args.seed, commit_hash=git_commit_hash(),
-        training_mode=detector.training_mode,
-    )
-
-    if args.once:
-        tick = _JUDGE_TICK if args.judge_mode else 5.0
-        summary = run_once(adapter, detector, scenario, tick)
-        adapter.cleanup()
-        print(f"[once] mode={args.mode} scenario={scenario} source={source} "
-              f"nodes={summary['nodes']} avg_risk={summary['avg_risk']} "
-              f"alerts={summary['alerts']}")
-        return 0
-
+    adapter = None
     try:
+        demo = wants_deterministic_data(args.mode, args.judge_mode)
+        init_db()
+
+        detector = AnomalyDetector().train(mode=args.ai_training, quiet=args.once)
+        adapter, notes = create_adapter(args.mode, demo=demo, seed=args.seed)
+        source = getattr(adapter, "source", "simulation")
+        scenario = args.scenario or "normal"
+        _write_scenario(scenario)
+        record_run_start(
+            args.mode, scenario, args.judge_mode, source, " | ".join(notes),
+            seed=args.seed, commit_hash=git_commit_hash(),
+            training_mode=detector.training_mode,
+        )
+
+        if args.once:
+            tick = _JUDGE_TICK if args.judge_mode else 5.0
+            summary = run_once(adapter, detector, scenario, tick)
+            adapter.cleanup()
+            print(f"[once] mode={args.mode} scenario={scenario} source={source} "
+                  f"nodes={summary['nodes']} avg_risk={summary['avg_risk']} "
+                  f"alerts={summary['alerts']}")
+            return 0
+
         asyncio.run(main_async(args, adapter, detector, source, notes))
     except KeyboardInterrupt:
+        # Ctrl-C anywhere (model training, the API probe, the main loop) is a
+        # normal way to stop a demo, not an error worth a traceback.
         print("\n[System] Shutting down.")
+        if adapter is not None:
+            adapter.cleanup()
     return 0
 
 

@@ -26,6 +26,9 @@ def create_adapter(mode: str, *, demo: bool = False, seed: int = 1234) -> tuple[
     mode = (mode or "simulation").lower()
 
     if mode == "simulation":
+        if demo:  # --judge-mode: the seeded generator, so frames are screenshot-stable
+            return SimulatedAdapter(demo=True, seed=seed), [
+                "Deterministic offline data (judge mode) — no internet or sensors required."]
         return SimulatedAdapter(demo=False, seed=seed), ["Offline simulation — no internet or sensors required."]
 
     if mode == "demo":
@@ -51,9 +54,11 @@ def create_adapter(mode: str, *, demo: bool = False, seed: int = 1234) -> tuple[
             adapter = VernierAdapter(seed=seed)
             if adapter.hardware_ready:
                 notes.append("Auto: physical Vernier sensor active — hardware node over simulated mesh.")
-            else:
-                notes.append("Auto: Vernier driver present but no device opened — simulation fallback.")
-            return adapter, notes
+                return adapter, notes
+            # Driver installed but no device answered: keep walking the
+            # documented chain (hardware -> API -> simulation).
+            adapter.cleanup()
+            notes.append("Auto: Vernier driver present but no device opened — trying live API.")
         adapter, n = _make_api(seed)
         if adapter.source == "api":
             notes.append("Auto: no sensors — live API mode selected.")

@@ -315,22 +315,37 @@ class AnomalyDetector:
 
     def predict(self, reading: dict) -> dict:
         """Score one reading. Returns is_anomaly, score (0-1), explanation, factors."""
+        return self.predict_many([reading])[0]
+
+    def predict_many(self, readings: list[dict]) -> list[dict]:
+        """Score a batch of readings in one pass through the forest.
+
+        Scoring is per-row, so the results are identical to calling
+        :meth:`predict` on each reading; the batch just avoids paying the
+        forest's per-call overhead twenty times per cycle, which matters on a
+        Raspberry Pi.
+        """
+        if not readings:
+            return []
         if not self.trained:
-            return {"is_anomaly": False, "score": 0.0,
-                    "explanation": "model not trained", "factors": []}
+            return [{"is_anomaly": False, "score": 0.0,
+                     "explanation": "model not trained", "factors": []}
+                    for _ in readings]
 
-        scaled = self.scaler.transform(self._feature_vector(reading))
-        raw = float(self.model.decision_function(scaled)[0])  # >0 normal, <0 anomaly
-        is_anomaly = self.model.predict(scaled)[0] == -1
-        score = max(0.0, min(1.0, 0.5 - raw))  # higher = more anomalous
-
-        factors = self.top_factors(reading)
-        if is_anomaly and not factors:
-            factors = ["an unusual combination of readings"]
-        explanation = (", ".join(factors) if factors else "normal conditions")
-        return {
-            "is_anomaly": bool(is_anomaly),
-            "score": round(score, 3),
-            "explanation": explanation,
-            "factors": factors,
-        }
+        matrix = np.vstack([self._feature_vector(r) for r in readings])
+        scaled = self.scaler.transform(matrix)
+        raws = self.model.decision_function(scaled)   # >0 normal, <0 anomaly
+        flags = self.model.predict(scaled) == -1
+        out = []
+        for reading, raw, is_anomaly in zip(readings, raws, flags):
+            score = max(0.0, min(1.0, 0.5 - float(raw)))  # higher = more anomalous
+            factors = self.top_factors(reading)
+            if is_anomaly and not factors:
+                factors = ["an unusual combination of readings"]
+            out.append({
+                "is_anomaly": bool(is_anomaly),
+                "score": round(score, 3),
+                "explanation": (", ".join(factors) if factors else "normal conditions"),
+                "factors": factors,
+            })
+        return out
