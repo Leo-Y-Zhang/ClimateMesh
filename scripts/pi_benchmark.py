@@ -135,7 +135,10 @@ def main() -> int:
                 f"{train_s:.1f} s and a full cycle of 20 nodes (read, AI scoring, risk, alerts, database) "
                 f"takes about {median_ms:.0f} ms against a 2-second read interval; "
                 f"the engine peaks at about {rss:.0f} MB of memory")
-    sentence += f", and the whole {'test suite passes in ' + str(int(tests_s)) + ' s' if tests_s else 'test suite passes'}."
+    # int() here and f"{...:.0f}" in the table above disagreed by a second on
+    # anything that did not land on a whole number, so the same run printed two
+    # different figures for the same measurement.
+    sentence += f", and the whole {f'test suite passes in {tests_s:.0f} s' if tests_s else 'test suite passes'}."
     print("  Sentence for the write-up (section 7):")
     print("  " + sentence)
     print("=" * 64)
