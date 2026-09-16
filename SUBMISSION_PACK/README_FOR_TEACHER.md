@@ -10,8 +10,8 @@ the working project itself (code, tests, documentation, screenshots).
 
 | File | What it is |
 |---|---|
-| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 3,000 words of body text (excluding tables, captions and the ► boxes) with six figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first (and the words "its full output is reproduced in the Appendix" in §6), then the ablation table in §6 with the two sentences under it, then the worked examples at the end of §3 (and the "see the Hyde Park example above" clause in the Figure 3 caption). Keep §12 (the declaration of help) whatever else goes. |
-| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (about 12 pages; the last holds the demo tour's full output), for reading or printing. The command below rebuilds it; only fall back to Word's File → Save As → PDF if that tooling is not installed, accepting a different layout. |
+| `WRITEUP.docx` | The written entry, editable in Word or Google Docs. About 3,000 words of body text (excluding tables, captions and the ► boxes) with seven figures and four tables. ► Check the competition's word limit; if you must cut, drop the Appendix first (and the words "its full output is reproduced in the Appendix" in §6), then the ablation table in §6 with the two sentences under it, then the worked examples at the end of §3 (and the "see the Hyde Park example above" clause in the Figure 3 caption). Keep §12 (the declaration of help) whatever else goes. |
+| `WRITEUP.pdf` | The same entry as a fixed-layout PDF (about 16 pages; the last holds the demo tour's full output), for reading or printing. The command below rebuilds it; only fall back to Word's File → Save As → PDF if that tooling is not installed, accepting a different layout. |
 | `WRITEUP.md` | The same text in plain Markdown (the source; renders on GitHub). |
 | `ENTRY_FORM_ANSWERS.md` | Ready-to-paste answers for the usual entry-form questions, in several lengths. |
 | `figures/` | The cropped dashboard figures used in the write-up. |
@@ -43,8 +43,8 @@ the team can take. Search the Word file for "►".
    editing in Word: the command regenerates the Word file from `WRITEUP.md`
    (it copies anything newer to `WRITEUP.docx.bak` first). By hand instead:
    see `photos/README.md`. Do not submit while a grey box is there.
-2. **§9, Figure 6**: the team photo, handled by the same command (or the
-   same manual steps) as Figure 5 in §7.
+2. **§9, Figure 7**: the team photo, handled by the same command (or the
+   same manual steps) as Figure 6 in §7.
 
 Nothing else in the write-up needs changing. §1's paragraph on why the team
 chose the project is drafted; read it once and change any word that is not
@@ -72,7 +72,7 @@ python scripts/judge_validate.py
 
 The `pip install` line is most of that time (it downloads about 200 MB); the
 check itself takes about two minutes. The last command prints a PASS/FAIL
-table; the expected result is **PASS (5/5 steps passed)** with **192 passed**
+table; the expected result is **PASS (5/5 steps passed)** with **212 passed**
 tests, a normal demo cycle at average risk 3.9 with 0 alerts, and a flood
 cycle at 50.8 with 10 alerts. Running `python scripts/demo_tour.py` shows all
 five scenarios in a few seconds. Both work with no internet and no

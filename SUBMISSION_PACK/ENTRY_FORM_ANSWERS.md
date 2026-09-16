@@ -48,7 +48,7 @@ practical playbooks (clear drains, open a cooling room, move outdoor PE). A
 seven-tab dashboard shows a live risk map, network overview, per-node
 explanations, AI explainability, evidence export, hardware readiness and the
 pitch, and every panel carries a provenance badge so simulated data is never
-mistaken for real. 192 automated tests pass on Python 3.11–3.13 and a single
+mistaken for real. 212 automated tests pass on Python 3.11–3.13 and a single
 command, `python scripts/judge_validate.py`, reproduces the evidence. No
 physical sensor has been validated yet; the software is honest about that on
 every screen.

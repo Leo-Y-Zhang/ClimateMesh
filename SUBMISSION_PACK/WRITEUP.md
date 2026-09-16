@@ -115,7 +115,7 @@ containing the plain-English explanation and a playbook of practical, low-risk
 actions for that hazard (flood, heatwave, smog, storm, cold). Alerts are
 rate-limited so the log never fills with duplicates.
 
-![Figure 2 — Node Detail, Regent's Canal, flood scenario, demo data: the "Why:" sentence and the six sub-scores behind a 100/100 score (this node saturates on its base score; see the Hyde Park example above for the mesh layer at work).](figures/node-detail-why-flood-demo.png)
+![Figure 2 — Node Detail, Regent's Canal, flood scenario, demo data: the "Why:" sentence, what the mesh could vouch for, the actions, and the six sub-scores behind a 100/100 score (this node saturates on its base score; see the Hyde Park example above for the mesh layer at work).](figures/node-detail-why-flood-demo.png)
 
 **How the parts talk.** The engine writes every reading and score into one
 small database file on the Pi; the dashboard only ever reads that file, so it
@@ -194,13 +194,13 @@ We label exactly what this is and is not.
 
 ## 6. Evidence that it works
 
-- **192 automated tests pass** on Python 3.11, 3.12 and 3.13, including a test
+- **212 automated tests pass** on Python 3.11, 3.12 and 3.13, including a test
   that executes all seven dashboard tabs in Streamlit's headless test harness
   and tests that pin the exact numbers quoted below. Continuous integration
   runs the suite on every push to `main` and every pull request, on x86-64
   (Python 3.11 and 3.13) and on a 64-bit Arm Linux runner (Python 3.11), the
   Pi's architecture; 3.12 was checked by hand.
-- `python scripts/judge_validate.py` runs the smoke test, all 192 tests, a
+- `python scripts/judge_validate.py` runs the smoke test, all 212 tests, a
   normal and a flood demo cycle and the evidence export → **PASS (5/5 steps
   passed)**. Its full output is `docs/screenshots/terminal-judge_validate.png`
   in the repository.
@@ -269,7 +269,50 @@ nodes in each band):
 The layers only ever amplify a hazard the sub-scores already see; they cannot
 invent one. These counts are pinned by a test, like the other numbers in this section.
 
-![Figure 4 — Network Overview, flood scenario, demo data: the four river nodes go CRITICAL while inland nodes such as Brixton and Greenwich stay SAFE. The hazard lands where it should, and the purple badge says every value is simulated.](figures/network-overview-flood-demo-crop.png)
+![Figure 4 — Network Overview, flood scenario, demo data. The four river and canal nodes go CRITICAL while inland nodes such as Brixton and Greenwich stay SAFE: the hazard lands where it should. The dashed lines are the WARNING and CRITICAL thresholds, drawn on the chart so a reader does not have to know them.](figures/network-overview-flood-demo-crop.png){.tall}
+
+### Reading it cold
+
+Everything above is a measurement, and none of it answers a different question:
+can somebody who did not build this look at the screen and know what to do?
+
+So we walked through the dashboard as three readers who are not us — the person
+who deals with a flooded entrance, the person who knows what the data means,
+and the person who knows how the code works — and set one task, with no
+explaining allowed: *there is a flood warning somewhere in this system; find
+it, and say what you would do.*
+
+Finding it took seconds. The second half failed outright. Every alert the
+engine raises has carried a plain-English action playbook from the start —
+clear the drains, inspect low-lying entrances, review the evacuation route —
+and the engine writes that playbook into the database with every alert we have
+ever raised. **The dashboard never displayed it.** Somebody who found the red
+node had nowhere to go — and §2 of this document, written before we looked,
+says those playbooks appear on the dashboard. They did not.
+
+The same reading found three more. The only thing saying whether `62/100` was
+bad was the colour of a dot — exactly the cue a red-green colour-blind reader
+does not get. The sidebar called a node `REGENTS-CANAL` while the map beside it
+called the same node Regent's Canal. And nothing on the page gave the time of
+the readings, so a live dashboard and one left open since yesterday looked
+identical.
+
+All four are fixed. The first screen now leads with the action (Figure 5): the
+worst node, its band in words, why it scored what it did, whether the mesh can
+vouch for it, and the numbered steps. Every score carries its band as a word as
+well as a colour, the sidebar uses the map's names, and the header shows the
+age of the newest reading and says so plainly once it is more than two minutes
+old. Twenty tests hold this in place, including one that fails if the
+playbook stops being displayed and one that checks a single stuck sensor still
+sends the reader to the equipment rather than to the river.
+
+We should be straight about what this was. It was us reading our own work as
+carefully as we could; it was not a stranger using the system. Putting it in
+front of somebody who actually manages a building, and changing it again based
+on what they do rather than what we predict they would do, is the most valuable
+thing left on our list.
+
+![Figure 5 — The first thing on the Live Map, flood scenario, demo data. Before this walkthrough the screen showed the map alone: the action playbook existed, was attached to every alert, and was never displayed. The mesh line above the steps is the corroboration state — here three of four neighbours agree, so this is a flood; with none agreeing it reads as a sensor to check instead.](figures/act-now-flood-demo.png)
 
 ## 7. The Raspberry Pi 5
 
@@ -277,7 +320,7 @@ The Pi 5 is the whole product: it runs the simulator or the live data source,
 the scikit-learn model, the risk engine, the database and the web dashboard at
 the same time, headless, at the site.
 
-![Figure 5 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg){.photo}
+![Figure 6 — ► PLACEHOLDER: replace photos/photo-1-pi-running.jpg with a photo of the Raspberry Pi 5 running Climate Mesh, and change the picture in WRITEUP.docx. Caption to use: "The Raspberry Pi 5 running Climate Mesh."](photos/photo-1-pi-running.jpg){.photo}
 
 ::: {.keep .tbl-bom}
 **Bill of materials for one node (approximate UK prices, September 2026):**
@@ -367,7 +410,7 @@ early-warning mesh.
 We are a team of two, Luis Yu and Leo Zhang. The first version of Climate
 Mesh went into our repository in early August 2026; by the end of that month
 it carried 144 automated tests, and the final review before submission
-brought that to 192. We worked on it together throughout, and we would both
+brought that to 212. We worked on it together throughout, and we would both
 be able to explain any part of it to a judge.
 
 The first thing that worked was the simulator: twenty nodes with a daily
@@ -412,19 +455,23 @@ test which pins a number you have published is the best guard against quietly
 breaking your own claims; and that a whole machine-learning pipeline really
 does fit on a £55 computer (199 MB and 14 ms a cycle on Arm).
 
-![Figure 6 — ► PLACEHOLDER: replace photos/photo-2-team.jpg with a photo of the two of you at the Pi, and change the picture in WRITEUP.docx. Caption to use: "Luis and Leo testing the flood scenario on the Pi."](photos/photo-2-team.jpg){.photo}
+![Figure 7 — ► PLACEHOLDER: replace photos/photo-2-team.jpg with a photo of the two of you at the Pi, and change the picture in WRITEUP.docx. Caption to use: "Luis and Leo testing the flood scenario on the Pi."](photos/photo-2-team.jpg){.photo}
 
 ## 10. What we would do next
 
-1. **Validate one physical node.** Read a real Vernier GDX-WTHR through the
+1. **Put it in front of somebody who is not us.** Give a site manager the same
+   task we set ourselves in §6, watch without helping, and change whatever they
+   struggle with. Our own walkthrough found four things; a stranger will find
+   the ones we cannot see because we built it.
+2. **Validate one physical node.** Read a real Vernier GDX-WTHR through the
    existing adapter and compare it against the digital twin for the same
    location.
-2. **Calibrate against history.** Use the evidence export to compare risk
+3. **Calibrate against history.** Use the evidence export to compare risk
    scores with recorded local flood and heat events, and tune thresholds from
    data instead of by hand.
-3. **Physical mesh links.** Two or more real Pi nodes exchanging readings
+4. **Physical mesh links.** Two or more real Pi nodes exchanging readings
    (Wi-Fi first, LoRa later) so neighbour agreement runs across actual devices.
-4. **Node cost pack.** A priced, tested bill of materials for a minimal
+5. **Node cost pack.** A priced, tested bill of materials for a minimal
    community node, published once we have built one from it and run it.
 
 ## 11. Safety, privacy and responsible use
@@ -455,7 +502,7 @@ the 144 tests the project already had at the end of August.
 
 Then, during the final review of this entry in September 2026, we used an AI
 coding assistant (Anthropic's Claude), working under our direction: it reviewed the code and
-fixed the bugs it found; added tests (the suite grew from 144 to 192); batched
+fixed the bugs it found; added tests (the suite grew from 144 to 212); batched
 the anomaly scoring and wrote the benchmark script and the Arm CI job behind
 the figures in §7; added the offline basemap; captured the screenshots;
 replaced the licence text at our request; and drafted this document, the
@@ -470,7 +517,7 @@ codebase are our own work.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/judge_validate.py        # smoke test + 192 tests + 2 demo cycles + export
+python scripts/judge_validate.py        # smoke test + 212 tests + 2 demo cycles + export
 python scripts/demo_tour.py             # all five scenarios in a few seconds
 python scripts/evaluate.py              # detection vs false alarms, ~1 minute
 python run.py --mode demo --scenario flood --judge-mode   # terminal 1
