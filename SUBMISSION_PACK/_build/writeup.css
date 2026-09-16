@@ -43,6 +43,7 @@ tbody tr:nth-child(even) td { background: #f3f6fa; }
 td[style*="text-align: right"], th[style*="text-align: right"] { text-align: right; }
 .tbl-modes th:nth-child(1) { width: 14%; } .tbl-modes th:nth-child(2) { width: 42%; } .tbl-modes th:nth-child(3) { width: 20%; } .tbl-modes th:nth-child(4) { width: 24%; }
 .tbl-ablation th:nth-child(1) { width: 12%; } .tbl-ablation th:nth-child(2) { width: 22%; } .tbl-ablation th:nth-child(3) { width: 24%; } .tbl-ablation th:nth-child(4) { width: 42%; }
+.tbl-eval th:nth-child(1) { width: 31%; } .tbl-eval th:nth-child(2) { width: 21%; } .tbl-eval th:nth-child(3) { width: 27%; } .tbl-eval th:nth-child(4) { width: 21%; }
 .tbl-bom th:nth-child(1) { width: 40%; } .tbl-bom th:nth-child(2) { width: 42%; } .tbl-bom th:nth-child(3) { width: 18%; }
 .tbl-tour th:nth-child(1) { width: 16%; } .tbl-tour th:nth-child(3) { width: 40%; }
 

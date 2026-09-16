@@ -16,7 +16,7 @@ connected.
 - [ ] `cd` into the repo and activate the Python environment.
 - [ ] Reset to a clean, deterministic state: `python scripts/reset_demo_db.py`
 - [ ] Run the test suite and screenshot the result: `pytest`
-      *(expect the full suite to pass — currently 189 tests; label the screenshot
+      *(expect the full suite to pass — currently 192 tests; label the screenshot
       "Tests: NN passing" to match the count it prints)*.
 - [ ] Run the smoke test: `python scripts/smoke_test.py`
 
