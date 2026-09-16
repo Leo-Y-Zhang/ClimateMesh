@@ -89,11 +89,43 @@ def _set_scenario(scenario: str) -> None:
     CONTROL.write_text(json.dumps({"scenario": scenario}))
 
 
+def _offline_basemap(page) -> None:
+    """Tick "Offline basemap" if it is not already ticked.
+
+    Every ``page.reload()`` starts a fresh Streamlit session, which resets the
+    checkbox -- and the tiled map it falls back to needs internet that a Pi in
+    a field, and this capture, do not have. Miss this and the screenshot comes
+    out with an empty rectangle where the map should be.
+    """
+    box = page.get_by_role("checkbox", name="Offline basemap", exact=False).first
+    if not box.is_checked():
+        page.get_by_text("Offline basemap", exact=False).first.click()
+        page.wait_for_timeout(2500)
+
+
 def _reset_scroll(page) -> None:
     page.evaluate(
         "document.querySelectorAll('section[data-testid=\"stSidebar\"] "
         "div').forEach(d => d.scrollTop = 0); window.scrollTo(0, 0);")
     page.wait_for_timeout(500)
+
+
+def _assert_map_drawn(page, filename: str) -> None:
+    """Refuse to write a Live Map screenshot whose map did not render.
+
+    The tile-free map is a plain scatter, so its node markers are real SVG
+    paths; an un-ticked basemap leaves a WebGL canvas that renders empty here
+    and produces a picture with a blank rectangle in the middle of it.
+    """
+    if "live-map" not in filename:
+        return
+    drawn = page.locator(
+        'div[data-testid="stPlotlyChart"]:visible .scatterlayer .points path'
+    ).count()
+    if drawn < 10:
+        raise RuntimeError(
+            f"{filename}: the offline map drew {drawn} node markers, expected 20 "
+            "-- the basemap checkbox is probably not ticked")
 
 
 def _crop(page, filename: str, box: dict) -> None:
@@ -126,8 +158,7 @@ def _capture_figures(page) -> None:
     _set_scenario("flood")
     page.reload(wait_until="networkidle", timeout=90_000)
     page.wait_for_timeout(6000)
-    page.get_by_text("Offline basemap", exact=False).first.click()
-    page.wait_for_timeout(3000)
+    _offline_basemap(page)
     # Tall enough for the whole page, so a clip never needs a full-page capture.
     page.set_viewport_size({"width": VIEWPORT["width"], "height": 3200})
     page.wait_for_timeout(3000)
@@ -198,27 +229,22 @@ def main() -> int:
                       timeout=90_000)
             page.wait_for_timeout(4000)
             # Tile-free basemap: the map a Pi with no internet actually draws.
-            page.get_by_text("Offline basemap", exact=False).first.click()
-            page.wait_for_timeout(2500)
+            _offline_basemap(page)
             # Clicking the checkbox scrolled the sidebar to the bottom; put it
             # back so the scenario buttons are in the picture.
-            page.evaluate(
-                "document.querySelectorAll('section[data-testid=\"stSidebar\"] "
-                "div').forEach(d => d.scrollTop = 0); window.scrollTo(0, 0);")
-            page.wait_for_timeout(800)
+            _reset_scroll(page)
             current = "flood"
             for scenario, tab, filename in SHOTS:
                 if scenario != current:
                     _set_scenario(scenario)
                     page.reload(wait_until="networkidle", timeout=90_000)
                     page.wait_for_timeout(6000)
+                    _offline_basemap(page)   # the reload dropped the tick
                     current = scenario
                 page.get_by_role("tab", name=tab, exact=False).first.click()
                 page.wait_for_timeout(3500)
-                page.evaluate(
-                    "document.querySelectorAll('section[data-testid=\"stSidebar\"] "
-                    "div').forEach(d => d.scrollTop = 0); window.scrollTo(0, 0);")
-                page.wait_for_timeout(600)
+                _reset_scroll(page)
+                _assert_map_drawn(page, filename)
                 page.screenshot(path=str(OUT / filename), full_page=True)
                 written.append(filename)
                 print(f"  wrote {filename}")
