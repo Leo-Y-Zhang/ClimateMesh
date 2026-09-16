@@ -359,8 +359,8 @@ the final review (four cores, 16 GB, Python 3.11), where the model trains in
 a real 64-bit Arm Linux machine (GitHub's Arm runner: four Neoverse-N2 cores,
 16 GB, Python 3.11 as the Bookworm release of Raspberry Pi OS ships). Every dependency installed from
 a prebuilt Arm wheel with compilation forbidden, all 212 tests passed in 13 s,
-the model trained in 0.1 s, a full 20-node cycle took 13 ms and the engine
-peaked at 199 MB.
+the model trained in 0.1 s, a full 20-node cycle took 13–14 ms across runs and
+the engine peaked at 199 MB.
 
 **On the Pi.** It runs on our own Pi 5; we have not put a stopwatch on it
 there, so for the board we give a bound rather than a number: its Cortex-A76
@@ -453,7 +453,7 @@ impressive one, and the work is mostly saying no to yourself. Technically:
 that anomaly detection finds odd *combinations* that thresholds miss; that a
 test which pins a number you have published is the best guard against quietly
 breaking your own claims; and that a whole machine-learning pipeline really
-does fit on a £55 computer (199 MB and 13 ms a cycle on Arm).
+does fit on a £55 computer (199 MB and about 14 ms a cycle on Arm).
 
 ![Figure 7 — ► PLACEHOLDER: replace photos/photo-2-team.jpg with a photo of the two of you at the Pi, and change the picture in WRITEUP.docx. Caption to use: "Luis and Leo testing the flood scenario on the Pi."](photos/photo-2-team.jpg){.photo}
 

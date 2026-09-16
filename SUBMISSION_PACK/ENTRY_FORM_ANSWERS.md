@@ -57,7 +57,7 @@ every screen.
 The Pi 5 is the whole product. It runs the data source (simulator, live API or
 a USB Vernier sensor), the scikit-learn anomaly model, the risk engine, the
 SQLite database and the Streamlit web dashboard simultaneously, headless.
-The 20 nodes are scored in one batch, so a full cycle takes 13 ms on the
+The 20 nodes are scored in one batch, so a full cycle takes about 14 ms on the
 64-bit Arm Linux machine in our continuous integration and about 23 ms on a
 four-core x86-64 Linux machine; on the Pi 5 itself, which we run but have not
 timed, that bounds a cycle at around 100 ms even if the Pi were eight times
