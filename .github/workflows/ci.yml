@@ -33,6 +33,25 @@ jobs:
       - name: Test (pytest)
         run: python -m pytest -q
 
+  # The bug that mattered most in this project was visible as a dead import:
+  # the dashboard imported the action playbooks and never used them, so the
+  # advice the engine attaches to every alert was never shown to anyone. This
+  # job is the check that would have caught it. F (pyflakes: unused imports and
+  # names, undefined names) and E9 (syntax and IO errors) only -- style is not
+  # what is being policed here.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Dead code and undefined names (ruff)
+        run: ruff check --select F,E9 --output-format github .
+
   # Real 64-bit Arm Linux (GitHub's free Arm runners for public repositories).
   # Proves the two claims the Raspberry Pi section of the write-up makes:
   # every dependency installs from a prebuilt aarch64 wheel (--only-binary

@@ -55,7 +55,7 @@ os.environ.setdefault("CLIMATE_MESH_DB",
 from ai.anomaly_model import AnomalyDetector          # noqa: E402
 from backend.risk_engine import (UNCORROBORATED, WARNING, CRITICAL,  # noqa: E402
                                  calculate_base, compute_all, risk_level)
-from config.nodes import NODES, NODES_BY_ID           # noqa: E402
+from config.nodes import NODES                        # noqa: E402
 from sensors.base import make_reading                 # noqa: E402
 from simulation.engine import _CLAMP, generate_channels  # noqa: E402
 from simulation.scenarios import scenario_delta       # noqa: E402

@@ -157,8 +157,6 @@ def generate_all(
     ramp = _ramp(tick, deterministic)
     correlated: dict[str, dict[str, float]] = {}
     for nid, channels in raw.items():
-        node = NODES_BY_ID[nid]
-        env = node["environment"]
         adjusted = dict(channels)
         neigh = NEIGHBOURS.get(nid, [])
         if neigh:

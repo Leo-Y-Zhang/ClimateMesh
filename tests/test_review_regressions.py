@@ -10,7 +10,6 @@ README quotes. No network and no hardware are used.
 from __future__ import annotations
 
 import importlib.util
-import json
 import math
 import sys
 from pathlib import Path
