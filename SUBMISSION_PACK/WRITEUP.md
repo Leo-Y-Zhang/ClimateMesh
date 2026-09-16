@@ -16,10 +16,11 @@ date: "PA Raspberry Pi Competition 2026/27 · Theme: Building a Positive Human F
 The official river gauge nearest to a school or an estate can be kilometres
 away from the stream, drain or underpass that actually floods. By the time an
 official warning reaches a community, the water is already rising. The World
-Meteorological Organization reports that countries with limited early-warning
-coverage suffer nearly six times the disaster mortality of countries with
-substantial coverage (4.05 versus 0.71 deaths per 100,000 people; WMO/UNDRR,
-*Global Status of Multi-Hazard Early Warning Systems*, 2023). There is a gap
+Meteorological Organization reports that countries with limited to moderate
+early-warning coverage suffer nearly six times the disaster mortality of
+countries with substantial to comprehensive coverage (4.05 versus 0.71 deaths
+per 100,000 people; WMO/UNDRR, *Global Status of Multi-Hazard Early Warning
+Systems*, 2023). There is a gap
 between where climate events happen and where they are measured.
 
 We picked this because it is the rare climate problem two students can
