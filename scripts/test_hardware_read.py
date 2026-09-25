@@ -51,15 +51,23 @@ def probe(adapter=None) -> dict:
     """Probe for a device and take one read. Returns a structured result dict.
 
     Never raises for the no-hardware case. ``adapter`` may be injected for
-    testing; otherwise a real :class:`VernierAdapter` is constructed.
+    testing, and is then left open for its caller; otherwise a real
+    :class:`VernierAdapter` is constructed here and cleaned up before this
+    returns, so a real sensor is stopped and released rather than left
+    running with its USB connection held.
     """
     status = detect()
-    if adapter is None:
+    owned = adapter is None
+    if owned:
         from sensors.vernier_adapter import VernierAdapter
         adapter = VernierAdapter()
 
     node_id = getattr(adapter, "hardware_node_id", None)
-    readings = adapter.read_all("none", tick=0.0)
+    try:
+        readings = adapter.read_all("none", tick=0.0)
+    finally:
+        if owned:
+            adapter.cleanup()
     hw_reading = None
     if node_id is not None:
         hw_reading = next((r for r in readings if r["node_id"] == node_id), None)
@@ -95,8 +103,7 @@ def main() -> int:
     print("  Climate Mesh — Vernier hardware read check")
     print("=" * 60)
 
-    result = probe()
-    adapter_cleanup = None  # adapter built inside probe(); nothing to close here
+    result = probe()   # builds the adapter, reads once and closes it again
 
     print(f"  Driver library visible : {result['device_visible']}")
     print(f"  Detection summary       : {result['detect_summary']}")
@@ -119,7 +126,6 @@ def main() -> int:
         print("  quality_flag='missing' — it is never presented as real data.")
     print("=" * 60)
     # Always exit 0: a missing sensor is a valid, expected outcome, not an error.
-    del adapter_cleanup
     return 0
 
 

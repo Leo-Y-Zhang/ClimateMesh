@@ -115,6 +115,27 @@ def test_probe_reports_real_hardware_for_the_stand_in_device(stand_in):
     assert classify_reading(result["reading"]) == REAL
 
 
+def test_the_hardware_check_stops_and_closes_the_device_it_opened(stand_in):
+    """``python scripts/test_hardware_read.py`` builds its own adapter, and is
+    run just before ``--mode hardware``: it must not leave the sensor started
+    with its USB connection held."""
+    device = FakeDevice()
+    stand_in(device).cleanup()    # install the stand-in driver only
+    device.calls.clear()
+    result = probe()              # exactly what the script's main() calls
+    assert result["is_real_hardware"] is True
+    assert ("start", 2000) in device.calls
+    assert device.calls[-2:] == [("stop",), ("close",)]
+
+
+def test_the_hardware_check_leaves_an_adapter_it_was_given_open(stand_in):
+    device = FakeDevice()
+    adapter = stand_in(device)
+    probe(adapter)
+    assert ("close",) not in device.calls   # the caller owns it
+    adapter.cleanup()
+
+
 @pytest.mark.parametrize("bad", [None, [], [3.2, 11.0]], ids=["none", "empty", "short"])
 def test_a_device_that_answers_badly_is_flagged_missing_not_hardware(stand_in, bad):
     adapter = stand_in(FakeDevice(samples=bad))
