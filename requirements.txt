@@ -16,7 +16,8 @@ pytest>=7.4.0,<9.0
 
 # --- Optional: physical Raspberry Pi sensors (NOT required for the demo) ---
 # Climate Mesh runs fully without these. Install them only when connecting a
-# real Vernier Go Direct Weather sensor / MQ-7 air-quality channel.
+# real Vernier Go Direct Weather sensor. (The two adafruit packages are for a
+# planned MQ-7 air-quality channel that the adapter does not read yet.)
 #   pip install godirect adafruit-blinka adafruit-circuitpython-ads1x15
 # They are commented out so a fresh clone installs cleanly on any machine.
 #

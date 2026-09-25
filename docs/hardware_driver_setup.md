@@ -37,14 +37,15 @@ These are the commands `setup_pi.sh` prints, run from the repository root inside
 your virtual environment:
 
 ```bash
-# 1. Low-level Vernier driver + (optional) MQ-7 ADC stack for air quality.
+# 1. Low-level Vernier driver + (optional) the ADC stack for the planned
+#    MQ-7 air-quality channel, which the adapter does not read yet.
 pip install godirect adafruit-blinka adafruit-circuitpython-ads1x15
 
 # 2. The gdx helper module (NOT on PyPI) — copy it into the project root.
 git clone --depth 1 https://github.com/VernierST/godirect-examples.git /tmp/gdx-src
 cp -r /tmp/gdx-src/python/gdx ./gdx
 
-# 3. (Only for the MQ-7 air-quality channel) enable the I2C bus.
+# 3. (Only when wiring the planned MQ-7 air-quality channel) enable the I2C bus.
 sudo raspi-config nonint do_i2c 0
 ```
 
@@ -88,10 +89,13 @@ Work through these in order:
    required; ignore BLE backend warnings.
 
 5. **Air-quality channel (MQ-7 + ADS1115) not found**
+   - The adapter does not read the MQ-7 yet (it is planned; see
+     `docs/hardware_integration_plan.md`), so air quality is always an
+     `estimated` placeholder on the hardware node, wired or not. These checks
+     only confirm the wiring is ready for when it does.
    - Enable I2C (`sudo raspi-config nonint do_i2c 0`) and reboot.
    - `i2cdetect -y 1` should show the ADS1115 (commonly `0x48`).
-   - The weather sensor works **without** this; air quality simply stays an
-     `estimated` placeholder on the hardware node.
+   - The weather sensor works **without** any of this.
 
 6. **It still falls back — and that is fine.**
    A missing or unreadable sensor is a *supported, honest* state. The pipeline

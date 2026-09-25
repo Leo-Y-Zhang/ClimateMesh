@@ -34,12 +34,16 @@ Until a device is present, `hardware` mode runs this single physical node over a
 ### Optional air-quality channel
 For air quality we plan an **MQ-7 carbon-monoxide sensor via an ADS1115 ADC**
 (I²C) feeding the canonical `air_quality` field, giving the river/urban nodes a
-genuine pollution reading.
+genuine pollution reading. This is not written yet: `vernier_adapter.py` does
+not read the ADC, so until it does, air quality on the hardware node stays a
+placeholder and the reading stays `quality_flag="estimated"`.
 
 ## Steps when the sensors arrive
 
 1. Install the driver: `pip install godirect`.
-2. Place the `gdx/` helper module alongside the adapter.
+2. Copy Vernier's `gdx/` helper folder into the project root, so that
+   `from gdx import gdx` resolves (exact commands in
+   [hardware_driver_setup.md](hardware_driver_setup.md)).
 3. Connect the GDX-WTHR to the Raspberry Pi 5 over **USB**.
 4. (Optional) Wire the MQ-7 + ADS1115 on the I²C bus.
 5. Run:
@@ -51,13 +55,16 @@ genuine pollution reading.
 
 ## Validation against the digital twin
 
-The physical node does not replace the simulation — it is checked against it. We
-run the live hardware node alongside its simulated **digital twin** for the same
-location and compare the two rows in the evidence export
-(`python scripts/export_evidence.py` → `evidence/readings.csv`, filtered to the
-hardware node: the `source="hardware"` row against the `source="simulation"`
-rows for the same `node_id`). Close agreement validates the sensor; large
-divergence flags a fault or a real environmental event worth investigating.
+The physical node is checked against its **digital twin** for the same
+location. In `hardware` mode the physical reading takes that node's place in
+the mesh, so a hardware run's evidence export holds only `source="hardware"`
+rows for it (plus `quality_flag="missing"` simulation rows for any read that
+failed); the twin's rows come from a second run. Export the hardware run
+(`python scripts/export_evidence.py` → `evidence/readings.csv`), keep a copy,
+then run `--mode api` (live Open-Meteo data for the same coordinates) over a
+comparable period, export again, and compare the two for that `node_id`.
+Close agreement validates the sensor; large divergence flags a fault or a real
+environmental event worth investigating.
 
 ## The sensor-swap promise
 

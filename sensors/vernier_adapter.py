@@ -1,11 +1,11 @@
 """Future physical-sensor adapter (Vernier Go Direct + simulated mesh).
 
-This is the sensor-ready pathway. When a Vernier Go Direct Weather sensor (and
-optionally an MQ-7/ADS1115 air-quality channel) is connected, this adapter
-reads the *real* device for its node and emits a ``source="hardware"`` reading
-for it. Every other node in the mesh keeps producing simulated data so the
-dashboard stays full while a single physical node is validated against the
-digital twin.
+This is the sensor-ready pathway. When a Vernier Go Direct Weather sensor is
+connected, this adapter reads the *real* device for its node and emits a
+``source="hardware"`` reading for it. (An MQ-7/ADS1115 air-quality channel is
+planned but not read here yet, so air quality stays a placeholder.) Every
+other node in the mesh keeps producing simulated data so the dashboard stays
+full while a single physical node is validated against the digital twin.
 
 Crucially: if no hardware is present, this adapter does **not** crash. It logs
 a clear warning, marks the hardware node's reading ``quality_flag="missing"``

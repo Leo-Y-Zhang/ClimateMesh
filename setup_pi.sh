@@ -30,7 +30,7 @@ echo "      To enable a physical Vernier Go Direct Weather sensor later, run:"
 echo "         pip install godirect adafruit-blinka adafruit-circuitpython-ads1x15"
 echo "         git clone --depth 1 https://github.com/VernierST/godirect-examples.git /tmp/gdx-src"
 echo "         cp -r /tmp/gdx-src/python/gdx ./gdx"
-echo "      and (for the MQ-7 air-quality channel) enable I2C:  sudo raspi-config nonint do_i2c 0"
+echo "      and (only when wiring the planned MQ-7 air-quality channel) enable I2C:  sudo raspi-config nonint do_i2c 0"
 
 # 4. Done.
 echo "[4/4] Setup complete."
