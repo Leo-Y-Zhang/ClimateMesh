@@ -27,10 +27,13 @@ from data.database import (
 SAFE, MODERATE, WARNING, CRITICAL = "SAFE", "MODERATE", "WARNING", "CRITICAL"
 
 # Don't re-fire the same alert type for the same node within this window unless
-# its severity changes. Fifteen minutes, not seconds: the engine scores every
+# its severity rises. Fifteen minutes, not seconds: the engine scores every
 # three seconds, so a short window would put roughly 1,600 alerts an hour on
 # screen during a storm -- the alert fatigue this project exists to prevent.
 ALERT_COOLDOWN_SECONDS = 900
+
+# Order of alert severities, for "has it got worse since the last alert?".
+_SEVERITY_RANK = {"warning": 1, "critical": 2}
 
 # A node counts as "elevated" (eligible for mesh correlation) at/above this base.
 _ELEVATED_BASE = 30.0
@@ -396,10 +399,10 @@ def alert_type_for(risk: dict) -> str:
 
 
 def maybe_alert(reading: dict, risk: dict) -> bool:
-    """Create an alert if warranted, respecting cooldown and severity changes.
+    """Create an alert if warranted, respecting cooldown and escalation.
 
     Returns True if an alert was written. An alert fires only when there is no
-    recent alert of the same type for this node, OR the severity has changed
+    recent alert of the same type for this node, OR the severity has risen
     since the last one — preventing duplicate spam every loop.
     """
     if risk["level"] in (SAFE, MODERATE):
@@ -412,8 +415,12 @@ def maybe_alert(reading: dict, risk: dict) -> bool:
         severity = "critical" if risk["level"] == CRITICAL else "warning"
 
     recent = get_recent_alert(reading["node_id"], alert_type, ALERT_COOLDOWN_SECONDS)
-    if recent is not None and recent["severity"] == severity:
-        return False  # within cooldown and severity unchanged -> suppress
+    # Within the cooldown only an escalation gets through. A score sitting on
+    # the CRITICAL line flips WARNING/CRITICAL on noise alone, and re-firing on
+    # any change of severity raised an alert every few seconds for one node.
+    if recent is not None and (_SEVERITY_RANK.get(severity, 0)
+                               <= _SEVERITY_RANK.get(recent["severity"], 0)):
+        return False
 
     insert_alert(
         node_id=reading["node_id"],

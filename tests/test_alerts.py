@@ -41,6 +41,23 @@ def test_severity_change_fires_new_alert(detector):
     assert count_rows("alerts") == 2
 
 
+def test_flapping_across_the_critical_line_does_not_re_alert(detector):
+    """A score sitting on 80 flips WARNING/CRITICAL on sensor noise alone.
+
+    Only an escalation may beat the cooldown. Re-firing on every change of
+    severity put an alert on screen every few seconds for the same node: 178
+    alerts in ten minutes of a simulated flood, 29 of them for one node.
+    """
+    reading, risk = _flood_risk(detector)
+    warning = dict(risk, level="WARNING", score=79.5)
+    critical = dict(risk, level="CRITICAL", score=80.5)
+    fired = [maybe_alert(reading, r) for r in (warning, critical) * 5]
+    # The first warning, the escalation to critical, and nothing after: a drop
+    # back to WARNING is not news, and the next CRITICAL is the same alert.
+    assert fired == [True, True] + [False] * 8
+    assert count_rows("alerts") == 2
+
+
 def test_safe_and_moderate_never_alert(detector):
     reading, risk = _flood_risk(detector)
     assert maybe_alert(reading, dict(risk, level="SAFE", score=10.0)) is False
