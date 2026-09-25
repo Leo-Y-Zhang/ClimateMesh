@@ -80,3 +80,16 @@ def test_a_full_intensity_event_is_still_detected(detector):
         assert any(r["level"] in ALERTING
                    and r["corroboration"] != UNCORROBORATED
                    and r["dominant_hazard"] == hazard for r in results), scenario
+
+
+def test_evaluate_py_detects_every_full_intensity_event_on_its_own_frames(detector):
+    """The table's "full intensity" column, measured on the frames evaluate.py
+    actually scores. The demo frame in the test above is a different frame
+    (seed 1234, plus the simulator's pull toward neighbours' deltas), so it
+    cannot stand in for this claim."""
+    from scripts.evaluate import HAZARD_OF, frame, verdicts
+
+    for scenario, hazard in HAZARD_OF.items():
+        for seed in SEEDS:
+            got = verdicts(frame(scenario, 1.0, seed), detector)
+            assert hazard in got["+ AI + mesh"], (scenario, seed)
