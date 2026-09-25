@@ -49,7 +49,7 @@ not field measurements; no physical sensor has been validated yet)*:
 > **simulated** and/or **live API** data. Every reading shows its source
 > (`simulation` / `demo` / `api` / `hardware`) so nothing is ever overstated.
 
-Built by **Luis Yu and Leo Zhang**, two sixth-form students (years 12–13
+Built by a team of two sixth-form students (years 12–13
 category), for the PA Raspberry Pi Competition 2026/27 — theme *Building a
 Positive Human Future* (Safer Societies & Sustainable World).
 
@@ -547,9 +547,9 @@ sections above with evidence:
 
 ## Credits
 
-Built by **Luis Yu and Leo Zhang**, two sixth-form students.
+Built by a team of two sixth-form students.
 
 ## Licence
 
-MIT. Copyright (c) 2026 Luis Yu and Leo Zhang. See [LICENSE](LICENSE):
-anyone may run, study, copy and adapt it, with attribution.
+MIT; the copyright notice is in [LICENSE](LICENSE). Anyone may run,
+study, copy and adapt it, with attribution.
