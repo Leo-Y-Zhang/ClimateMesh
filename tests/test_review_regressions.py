@@ -115,6 +115,22 @@ def test_non_finite_values_score_zero_not_critical(detector):
     assert "nan" not in result["explanation"]
 
 
+@pytest.mark.parametrize("bad", [float("inf"), float("-inf"), float("nan"), None],
+                         ids=["inf", "-inf", "nan", "none"])
+def test_an_unmeasured_channel_never_reaches_the_forest(detector, bad):
+    """The sub-scores treat a non-finite channel as unmeasured; the AI must too.
+
+    IsolationForest rejects inf on every scikit-learn version, and NaN on
+    versions requirements.txt still allows (1.5.2 raises); None was a
+    TypeError. Any of them escaped compute_all and stopped the scoring loop.
+    """
+    reading = _reading(temperature=bad)
+    assert all(math.isfinite(v) for v in detector._feature_vector(reading)[0])
+    result = compute_all([reading], detector)[0]
+    assert result["temp_sub"] == 0.0
+    assert result["level"] != "CRITICAL"
+
+
 # --- Score / band / text agreement ------------------------------------------
 
 def test_stored_score_band_and_text_agree(detector):

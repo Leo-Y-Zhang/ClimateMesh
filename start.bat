@@ -19,8 +19,14 @@ start "" cmd /k "cd /d "%~dp0" && python run.py --mode demo"
 echo.
 echo Waiting 3 seconds for the backend to initialise...
 timeout /t 3 /nobreak >nul
-echo Opening the Streamlit dashboard...
+echo Starting the Streamlit dashboard...
 start "" cmd /k "cd /d "%~dp0" && python -m streamlit run dashboard/app.py"
+REM .streamlit/config.toml sets headless = true for the Raspberry Pi, so
+REM Streamlit never opens a browser itself: open it from here instead.
+echo Waiting 8 seconds for the dashboard to start...
+timeout /t 8 /nobreak >nul
+start "" http://127.0.0.1:8501
 echo.
-echo The dashboard opens in your browser. Pick scenarios from the sidebar.
+echo The dashboard is at http://127.0.0.1:8501 in your browser. If the page is
+echo still loading, give it a few seconds and refresh. Pick scenarios from the sidebar.
 echo Close both terminal windows to stop the system.

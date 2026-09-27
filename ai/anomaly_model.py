@@ -31,6 +31,7 @@ so the explanation can never drift from what the forest learned.
 from __future__ import annotations
 
 import json
+import math
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -92,6 +93,23 @@ _ARCHIVE_DEFAULT_DAYS = 30
 _MIN_ARCHIVE_ROWS = 100
 
 _ARCHIVE_MODES = ("historical", "archive", "auto")
+
+
+def _finite_or(value, default: float) -> float:
+    """``value`` as a float, or ``default`` when it is missing or not finite.
+
+    A channel with no usable value (None, NaN, inf) is scored as unmeasured,
+    exactly as a missing key is: it takes the baseline value, so it neither
+    looks anomalous nor reaches the forest, which rejects inf on every
+    scikit-learn version and NaN on the older ones requirements.txt allows.
+    The risk engine's sub-scores treat the same channel as 0 for the same
+    reason.
+    """
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    return number if math.isfinite(number) else default
 
 
 def generate_training_data(n_samples: int = 2000, seed: int = 42) -> np.ndarray:
@@ -294,7 +312,7 @@ class AnomalyDetector:
         }
 
     def _feature_vector(self, reading: dict) -> np.ndarray:
-        return np.array([[float(reading.get(f, _NORMAL[f][0])) for f in FEATURES]])
+        return np.array([[_finite_or(reading.get(f), _NORMAL[f][0]) for f in FEATURES]])
 
     def top_factors(self, reading: dict, k: int = 3) -> list[str]:
         """Channels deviating most from the learned baseline (in sigma units).
@@ -308,7 +326,7 @@ class AnomalyDetector:
             sd = float(self._feat_std[i])
             if sd < 1e-9:  # guard against a degenerate (constant) feature column
                 sd = _NORMAL[f][1]
-            z = abs(float(reading.get(f, mu)) - mu) / sd if sd else 0.0
+            z = abs(_finite_or(reading.get(f), mu) - mu) / sd if sd else 0.0
             devs.append((z, _HUMAN[f]))
         devs.sort(reverse=True)
         return [name for z, name in devs[:k] if z > 1.0]
