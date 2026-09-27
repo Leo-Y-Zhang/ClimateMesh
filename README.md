@@ -53,10 +53,6 @@ Built by **Luis Yu and Leo Zhang**, two sixth-form students (years 12–13
 category), for the PA Raspberry Pi Competition 2026/27 — theme *Building a
 Positive Human Future* (Safer Societies & Sustainable World).
 
-> **Submitting this project?** Everything a teacher needs — the written entry,
-> entry-form answers and where the photos go — is in
-> [`SUBMISSION_PACK/`](SUBMISSION_PACK/README_FOR_TEACHER.md).
-
 ---
 
 ## The dashboard
@@ -383,7 +379,6 @@ ClimateMesh/
     pi_benchmark.py          # measures cycle time + memory on this machine, prints a sentence
   tests/                     # pytest suite
   docs/                      # hardware driver setup, integration plan, evidence checklist, screenshots
-  SUBMISSION_PACK/           # write-up (.md/.docx/.pdf), entry-form answers, figures, photos, build tooling
 ```
 
 ## Known limitations (honest by design)
