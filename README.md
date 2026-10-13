@@ -59,8 +59,9 @@ Positive Human Future* (Safer Societies & Sustainable World).
 
 A 7-tab Streamlit dashboard reads the same SQLite database the engine writes:
 
-- **Live Map** — the 20 nodes on a Greater London map, coloured and sized by
-  risk score, each with a provenance badge on hover.
+- **Live Map** — the 20 nodes on a Greater London map, coloured by band and
+  sized by risk score, with the mesh links between neighbours and a
+  provenance badge on hover. It draws its own basemap, so it needs no internet.
 - **Network Overview** — average risk, highest-risk node, active alerts, and
   risk-by-node / risk-distribution charts.
 - **Node Detail** — one node's readings, its six risk sub-scores, and a
@@ -276,7 +277,7 @@ including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
 
 | | |
 |---|---|
-| **Live Map (flood)** — the 20 nodes coloured and sized by risk, here on the tile-free **Offline basemap** (Thames outline for orientation) | **Live Map (heatwave)** — after clicking *Heatwave* in the sidebar: the urban nodes light up instead of the river nodes |
+| **Live Map (flood)** — the 20 nodes coloured by band and sized by risk, on the tile-free **Offline basemap**: grey lines are the mesh links between neighbours, blue lines the waterways | **Live Map (heatwave)** — after clicking *Heatwave* in the sidebar: the urban nodes light up instead of the river nodes |
 | ![Live Map, flood, demo data, offline basemap](docs/screenshots/live-map-flood-demo.png) | ![Live Map, heatwave, demo data, offline basemap](docs/screenshots/live-map-heatwave-demo.png) |
 | **Network Overview** — fleet risk, highest node, active alerts, risk-by-node and distribution charts | **Node Detail** — Regent's Canal: readings, provenance badges, the plain-English *Why:* line and the six sub-scores |
 | ![Network Overview, flood, demo data](docs/screenshots/network-overview-flood-demo.png) | ![Node Detail, flood, demo data](docs/screenshots/node-detail-flood-demo.png) |
@@ -366,6 +367,7 @@ ClimateMesh/
     playbooks.py             # community action playbooks per hazard
   data/database.py           # SQLite storage (readings, risk, alerts, runs)
   dashboard/app.py           # 7-tab Streamlit dashboard
+  dashboard/offline_map.py   # tile-free Live Map: nodes, mesh links, waterways (pure, unit-tested)
   dashboard/badges.py        # provenance + quality badge wording (pure, unit-tested)
   data/sensor_config.json    # optional: which node the physical sensor represents
   scripts/
@@ -498,9 +500,10 @@ never confused. See [docs/evidence_checklist.md](docs/evidence_checklist.md).
   simulation. This is expected and clearly labelled.
 - **Map doesn't render** → the bundled Streamlit/Plotly versions use free
   OpenStreetMap-based tiles (no API key). Ensure `pip install -r requirements.txt`
-  completed. The street tiles are the one thing that needs internet: tick
-  **Offline basemap** in the sidebar and the Live Map draws the 20 labelled
-  nodes over the Thames, Lea, Wandle and Regent's Canal instead, fully offline.
+  completed. The street tiles are the one thing that needs internet, so the
+  **Offline basemap** in the sidebar is ticked by default: the Live Map draws
+  the 20 labelled nodes, the mesh links between neighbours and the Thames, Lea,
+  Wandle and Regent's Canal, fully offline. Untick it for street tiles.
 - **`pytest: command not found`** → use `python -m pytest`.
 - **Reset everything** → `python scripts/reset_demo_db.py`.
 
