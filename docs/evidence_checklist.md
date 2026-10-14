@@ -9,14 +9,14 @@ connected.
 > A reference set captured from this exact tree (dashboard tabs in demo /
 > flood, plus terminal output of every command below) lives in
 > `docs/screenshots/`. Retake anything you want on the Pi itself; the Live
-> Map shots use the sidebar's **Offline basemap** option, which needs no
-> internet (untick it for street tiles when online).
+> Map shots use the sidebar's **Offline basemap** option (on by default),
+> which needs no internet (untick it for street tiles when online).
 
 ## 0. Before you start
 - [ ] `cd` into the repo and activate the Python environment.
 - [ ] Reset to a clean, deterministic state: `python scripts/reset_demo_db.py`
 - [ ] Run the test suite and screenshot the result: `pytest`
-      *(expect the full suite to pass — currently 236 tests; label the screenshot
+      *(expect the full suite to pass — currently 242 tests; label the screenshot
       "Tests: NN passing" to match the count it prints)*.
 - [ ] Run the smoke test: `python scripts/smoke_test.py`
 

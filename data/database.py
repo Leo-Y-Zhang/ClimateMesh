@@ -22,6 +22,18 @@ DB_PATH = Path(os.environ.get("CLIMATE_MESH_DB", Path(__file__).parent / "climat
 _local = threading.local()
 
 
+class _ThreadConn:
+    """One thread's connection. Streamlit runs the dashboard in threads that
+    come and go; when one ends, this closes its connection rather than leave it
+    to the garbage collector (which Python 3.13 warns about)."""
+
+    def __init__(self, conn: sqlite3.Connection, path: str) -> None:
+        self.conn, self.path = conn, path
+
+    def __del__(self) -> None:
+        self.conn.close()
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -29,7 +41,8 @@ def _now() -> str:
 def _get_conn() -> sqlite3.Connection:
     """Thread-local SQLite connection in WAL mode."""
     path = Path(os.environ.get("CLIMATE_MESH_DB", DB_PATH))
-    if getattr(_local, "conn", None) is None or getattr(_local, "path", None) != str(path):
+    held = getattr(_local, "held", None)
+    if held is None or held.path != str(path):
         conn = sqlite3.connect(str(path), timeout=10)
         conn.execute("PRAGMA journal_mode=WAL")
         # NORMAL is durable enough under WAL (a power cut can lose only the
@@ -38,9 +51,8 @@ def _get_conn() -> sqlite3.Connection:
         conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA busy_timeout=5000")
         conn.row_factory = sqlite3.Row
-        _local.conn = conn
-        _local.path = str(path)
-    return _local.conn
+        _local.held = _ThreadConn(conn, str(path))   # a switched database's old one closes here
+    return _local.held.conn
 
 
 def init_db() -> None:
@@ -364,8 +376,7 @@ def reset_db() -> None:
 
 def close() -> None:
     """Close the thread-local connection (mainly for tests)."""
-    conn = getattr(_local, "conn", None)
-    if conn is not None:
-        conn.close()
-        _local.conn = None
-        _local.path = None
+    held = getattr(_local, "held", None)
+    if held is not None:
+        held.conn.close()
+        _local.held = None
