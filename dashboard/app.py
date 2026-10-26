@@ -18,15 +18,19 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from backend.playbooks import playbook_for
 from backend.risk_engine import alert_type_for
+from dashboard.accessibility import (
+    PALETTES, band_scale, read_aloud_html, sms_alert, spoken_summary,
+)
 from dashboard.formatting import (
     age_phrase, age_seconds, corroboration_line, node_name as _node_name, score_text,
 )
-from dashboard.offline_map import BAND_COLOURS, BAND_SCALE, offline_map as _offline_map
+from dashboard.offline_map import BAND_COLOURS, offline_map as _offline_map
 from dashboard.badges import (
     effective_source_from_readings, quality_badge_html, source_badge_html,
     source_label, sources_legend_html,
@@ -142,7 +146,8 @@ def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
                       "Open **Node Detail** for any node's full breakdown.")
 
 
-def _scatter_map(df: pd.DataFrame, offline: bool = False):
+def _scatter_map(df: pd.DataFrame, offline: bool = False,
+                 colours: dict[str, str] | None = None):
     """Build a risk-coloured map, tolerating both old and new plotly APIs.
 
     ``offline=True`` returns the tile-free labelled map from
@@ -150,12 +155,13 @@ def _scatter_map(df: pd.DataFrame, offline: bool = False):
     internet at all (the street-map tiles are the only part of the dashboard
     that ever needs a connection).
     """
+    colours = BAND_COLOURS if colours is None else colours
     if offline:
-        return _offline_map(df)
+        return _offline_map(df, colours=colours)
     style = "carto-positron-nolabels"
     common = dict(
         lat="latitude", lon="longitude", color="score", size="size",
-        color_continuous_scale=BAND_SCALE,
+        color_continuous_scale=band_scale(colours),
         range_color=[0, 100], size_max=22, zoom=9,
         center={"lat": 51.50, "lon": -0.11}, hover_name="node_name",
         hover_data={"node_id": True, "level": True, "score": ":.0f",
@@ -252,6 +258,19 @@ with banner:
                    "🎬 Digital Twin (Demo) = deterministic demo · 💻 Offline Simulation "
                    "= generated. Quality: ✅ ok · ≈ estimated/proxy · 🕒 stale · ⚠️ missing.")
 
+if not merged.empty:
+    components.html(read_aloud_html(spoken_summary(merged.to_dict("records"))), height=70)
+    with st.expander("Text-message alert (preview)"):
+        acting = merged[merged["level"].isin(ACTING_LEVELS)].sort_values(
+            "score", ascending=False)
+        if not acting.empty:
+            message = sms_alert(acting.iloc[0].to_dict())
+            st.code(message, language=None, wrap_lines=True)
+            st.caption(f"{len(message)} characters out of 160.")
+        else:
+            st.write("No place currently needs an alert.")
+        st.caption("Nothing is sent. This previews what a receptionist's phone would get.")
+
 if readings_df.empty:
     st.warning("No data yet. Start the engine in another terminal:  "
                "`python run.py --mode demo --scenario flood --judge-mode`")
@@ -290,6 +309,10 @@ with st.sidebar:
     else:
         st.info("Waiting for data…")
     st.divider()
+    st.header("Accessibility")
+    cb_safe = st.checkbox("Colour-blind safe colours", value=False, key="cb_safe")
+    large_text = st.checkbox("Larger text", value=False, key="large_text")
+    colours = PALETTES["colour-blind safe" if cb_safe else "standard"]
     # On by default: a Pi in the field usually has no internet, and the tiled
     # map then draws an empty rectangle with nothing to say why.
     offline_map = st.checkbox("Offline basemap (no map tiles)", value=True, key="offline_map",
@@ -298,6 +321,15 @@ with st.sidebar:
                                    "when the Pi is online.")
     refresh = st.checkbox("Auto-refresh (2s)", value=True, key="auto_refresh")
     st.caption("Climate Mesh · honest by design")
+
+if large_text:
+    st.markdown("""<style>
+        html { font-size: 120%; }
+        [data-testid="stSidebar"] p, [data-testid="stSidebar"] label,
+        [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {
+            font-size: 1rem;
+        }
+    </style>""", unsafe_allow_html=True)
 
 # --- Tabs -----------------------------------------------------------------
 tabs = st.tabs([
@@ -319,9 +351,12 @@ with tabs[0]:
         # A key that changes with the scenario/basemap remounts the chart, so the
         # WebGL map is drawn fresh instead of patched in place (an in-place
         # update after a scenario switch can leave the map canvas blank).
-        st.plotly_chart(_scatter_map(merged, offline=offline_map), use_container_width=True,
+        st.plotly_chart(_scatter_map(merged, offline=offline_map, colours=colours),
+                        use_container_width=True,
                         key=f"live-map-{active_scenario}-{'offline' if offline_map else 'tiles'}")
-        st.caption("Marker colour = risk band, size = risk score (green safe → red critical). "
+        palette_key = ("blue SAFE, yellow MODERATE, vermilion WARNING, black CRITICAL"
+                       if cb_safe else "green safe → red critical")
+        st.caption(f"Marker colour = risk band, size = risk score ({palette_key}). "
                    "Hover a node to see its name and data source. Street tiles need "
                    "internet; the **Offline basemap** in the sidebar (on by default) needs "
                    "no connection and also draws the mesh links between neighbours.")
@@ -357,18 +392,19 @@ with tabs[1]:
             by_node = risks_df.sort_values("score").assign(
                 node=lambda d: d["node_id"].map(_node_name))
             bar = px.bar(by_node, x="score", y="node", orientation="h", color="level",
-                         color_discrete_map=BAND_COLOURS,
-                         category_orders={"level": list(BAND_COLOURS)[::-1]},
+                         color_discrete_map=colours,
+                         category_orders={"level": list(colours)[::-1]},
                          labels={"node": "", "score": "risk score (0–100)", "level": "band"})
             bar.update_yaxes(categoryorder="array", categoryarray=list(by_node["node"]))
             bar.update_xaxes(range=[0, 100])
-            bar.add_vline(x=60, line_dash="dash", line_color="orange",
-                          annotation_text="WARNING 60", annotation_position="top",
-                          annotation_font=dict(size=10, color="#c2670a"))
-            bar.add_vline(x=80, line_dash="dash", line_color="red",
-                          annotation_text="CRITICAL 80", annotation_position="top",
-                          annotation_font=dict(size=10, color="#c0392b"))
-            bar.update_layout(height=460, margin=dict(t=30, b=10))
+            bar.add_vline(x=60, line_dash="dash", line_color=colours["WARNING"],
+                          annotation=dict(text="WARNING 60", y=1.09, yref="paper", showarrow=False,
+                                          font=dict(size=10, color=colours["WARNING"])))
+            bar.add_vline(x=80, line_dash="dash", line_color=colours["CRITICAL"],
+                          annotation=dict(text="CRITICAL 80", y=1.03, yref="paper", showarrow=False,
+                                          font=dict(size=10, color=colours["CRITICAL"])))
+            # the two threshold labels sit on separate rows: 60 and 80 are too close for one
+            bar.update_layout(height=470, margin=dict(t=44, b=10))
             st.plotly_chart(bar, use_container_width=True)
         with cc2:
             st.subheader("Risk distribution")
@@ -376,7 +412,7 @@ with tabs[1]:
                 ["SAFE", "MODERATE", "WARNING", "CRITICAL"], fill_value=0)
             pie = px.pie(values=counts.values, names=counts.index,
                          color=counts.index,
-                         color_discrete_map=BAND_COLOURS)
+                         color_discrete_map=colours)
             pie.update_layout(height=300, margin=dict(t=10, b=10))
             st.plotly_chart(pie, use_container_width=True)
             st.subheader("Weather / AQI summary")

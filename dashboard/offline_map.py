@@ -140,12 +140,19 @@ def _key(fig: go.Figure) -> None:
                             "which can vouch for each other")
 
 
-def offline_map(df: pd.DataFrame, height: int = 560) -> go.Figure:
+def offline_map(df: pd.DataFrame, height: int = 560,
+                colours: dict[str, str] | None = None) -> go.Figure:
     """Tile-free map: labelled nodes, mesh links and the main waterways.
 
     ``df`` needs ``node_id``, ``node_name``, ``latitude``, ``longitude``,
     ``score``, ``level`` and ``source``; ``dominant_hazard`` is used if present.
+    ``colours`` changes only the palette, preserving the engine's band edges.
     """
+    scale = BAND_SCALE
+    if colours is not None:
+        # Import here because accessibility reuses this module's band constants.
+        from dashboard.accessibility import band_scale
+        scale = band_scale(colours)
     fig = go.Figure()
     for name, pts in WATERWAYS.items():
         fig.add_trace(go.Scatter(
@@ -178,7 +185,7 @@ def offline_map(df: pd.DataFrame, height: int = 560) -> go.Figure:
         textfont=dict(size=11, color=_INK),
         marker=dict(
             size=12 + score * 0.2, color=score, cmin=0, cmax=100,
-            colorscale=BAND_SCALE,
+            colorscale=scale,
             colorbar=dict(
                 title=dict(text="risk", font=dict(size=11, color=_MUTED)),
                 tickvals=[(lo + hi) / 2 for _, lo, hi, _ in BANDS],
