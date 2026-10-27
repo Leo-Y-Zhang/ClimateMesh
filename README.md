@@ -245,9 +245,11 @@ then open <http://localhost:8501> on the laptop.
 ## Street display on the Pi
 
 The separate street display shows one site at a time: a large risk band and
-score, its plain-English explanation, three playbook actions, neighbour
-agreement, local time, and the reading's data-source badge. Demo and simulation
-remain labelled; readings or scores older than 30 seconds are replaced by
+score, its plain-English explanation, three numbered playbook actions, six
+labelled sub-score bars ordered by severity, the stored AI and mesh multipliers,
+and a ten-minute score trend. Neighbour chips show a short site name and score;
+the header shows the rotation position, London time (GMT/BST), and the reading's
+data-source badge. Demo and simulation remain labelled; readings or scores older than 30 seconds are replaced by
 **No fresh data: is the engine running?**
 
 From the repository directory, install the boot-to-display setup with:
@@ -281,12 +283,18 @@ python -m streamlit run dashboard/street.py --server.port 8502
 ```
 
 Open <http://127.0.0.1:8502>. Add `?node=REGENTS-CANAL` to pin a site,
-`?palette=cb` for the existing colour-blind palette, or `?large=1` for larger
-type; combine options with `&`. Otherwise the top three sites rotate every
-8 seconds in score order; when all sites are SAFE, all rotate every 20 seconds.
+`?palette=cb` for the existing colour-blind palette, `?theme=light` for bright
+windows (dark is the default), or `?large=1` for larger type; combine options
+with `&`. Otherwise the top three sites rotate every 8 seconds in score order; when all sites are SAFE, all rotate every 20 seconds.
 The responsive layout supports **800×480**, **720×1280 portrait**, **1280×720**
-and **1920×1080**, with readable text chosen by computed band-colour contrast.
-The main dashboard remains on port 8501.
+and **1920×1080**, using one offline system font stack and tabular numerals.
+Portrait puts actions immediately after the hero card. Short landscape screens
+hide the sparkline and compact the drivers to keep the advice visible. Both
+themes use AA-contrast text, including computed ink on every risk-band colour.
+A thin progress bar shows the time until rotation; it stays still when the
+browser requests reduced motion. Trends use stored risk scores, with guides at
+the band boundaries; no score is recalculated. The main dashboard remains on
+port 8501.
 
 Optional screenshot generation: `python scripts/street_screenshots.py` runs an
 isolated demo/judge engine and saves four `docs/screenshots/street-*-demo.png`
