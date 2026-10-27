@@ -40,7 +40,7 @@ def _render(**state):
 def test_dashboard_renders_with_an_empty_database():
     at = _render()
     assert not at.exception, [e.message for e in at.exception]
-    assert len(at.tabs) == 7
+    assert len(at.tabs) == 8
     assert any("No data yet" in w.value for w in at.warning)
 
 
@@ -57,7 +57,7 @@ def test_dashboard_renders_every_tab_with_live_data(detector, tmp_path, monkeypa
 
     at = _render()
     assert not at.exception, [e.message for e in at.exception]
-    assert len(at.tabs) == 7
+    assert len(at.tabs) == 8
     page = " ".join(m.value for m in at.markdown)
     assert "Why:" in page                       # Node Detail rendered
     assert "Current node provenance" in page    # Hardware Readiness rendered
@@ -100,3 +100,22 @@ def test_dashboard_renders_with_accessibility_and_data(detector, offline):
     assert all(t["marker"]["color"] == palette[t["name"]] for t in bars)
     pie = next(t for fig in figures for t in fig["data"] if t["type"] == "pie")
     assert pie["marker"]["colors"] == [palette[band] for band in pie["labels"]]
+
+
+def test_real_events_work_without_live_data():
+    at = _render()
+    assert at.tabs[-1].label == "Real events"
+    assert any("Recorded (archive)" in m.value for m in at.markdown)
+    next(s for s in at.selectbox if s.label == "Recorded event").select("heat-2022-07-19").run()
+    assert not at.exception, [e.message for e in at.exception]
+    at.slider[0].set_value(14).run()
+    assert not at.exception, [e.message for e in at.exception]
+    assert any("2022-07-18T14:00" in m.value for m in at.markdown)
+
+
+def test_real_events_missing_outputs_show_generation_command(monkeypatch, tmp_path):
+    from dashboard import real_events
+    monkeypatch.setattr(real_events, "ROOT", tmp_path)
+    at = _render()
+    assert not at.exception, [e.message for e in at.exception]
+    assert any("python scripts/replay_event.py --all" in c.value for c in at.code)

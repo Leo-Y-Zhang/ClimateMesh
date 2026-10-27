@@ -1,7 +1,7 @@
 """Streamlit dashboard for Climate Mesh.
 
-Seven tabs (Live Map, Network Overview, Node Detail, AI Explainability,
-Evidence & Validation, Hardware Readiness, Competition Pitch). The dashboard is
+Eight tabs (Live Map, Network Overview, Node Detail, AI Explainability,
+Evidence & Validation, Hardware Readiness, Competition Pitch, Real events). The dashboard is
 a pure *reader* of the shared SQLite database — the engine process (``run.py``)
 writes; this displays. Data-source labels and the active mode are shown
 prominently so nobody mistakes simulated or API data for physical-sensor data.
@@ -256,7 +256,8 @@ with banner:
                 unsafe_allow_html=True)
         st.caption("📡 Physical Sensor = real hardware · 🌐 Live API = Open-Meteo · "
                    "🎬 Digital Twin (Demo) = deterministic demo · 💻 Offline Simulation "
-                   "= generated. Quality: ✅ ok · ≈ estimated/proxy · 🕒 stale · ⚠️ missing.")
+                   "= generated · 🗃️ Recorded (archive) = past data. "
+                   "Quality: ✅ ok · ≈ estimated/proxy · 🕒 stale · ⚠️ missing.")
 
 if not merged.empty:
     components.html(read_aloud_html(spoken_summary(merged.to_dict("records"))), height=70)
@@ -335,6 +336,7 @@ if large_text:
 tabs = st.tabs([
     "🗺️ Live Map", "📊 Network Overview", "🔬 Node Detail", "🤖 AI Explainability",
     "🧾 Evidence & Validation", "🔌 Hardware Readiness", "🏆 Competition Pitch",
+    "Real events",
 ])
 
 # === LIVE MAP =============================================================
@@ -657,6 +659,11 @@ with tabs[6]:
         "readings will be compared against the digital twin to validate the model.")
     st.info("Honest positioning: **sensor-ready, not sensor-dependent.** Until sensors "
             "are connected, Climate Mesh uses clearly-labelled simulated and/or API data.")
+
+# === REAL EVENTS ==========================================================
+with tabs[7]:
+    from dashboard.real_events import render_real_events
+    render_real_events(_scatter_map, colours)
 
 # --- Auto-refresh ---------------------------------------------------------
 if refresh:

@@ -14,7 +14,11 @@ data/climate_mesh.db-shm
 data/demo_control.json
 
 # Generated evidence exports
-evidence/
+evidence/*
+!evidence/replay/
+evidence/replay/*
+!evidence/replay/*.json
+!evidence/replay/figures/
 
 # Cached Open-Meteo historical archive training data (offline-friendly repeat runs)
 ai/_archive_cache.json

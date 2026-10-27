@@ -92,6 +92,9 @@ _ARCHIVE_DEFAULT_DAYS = 30
 # back to synthetic rather than fitting on a near-empty matrix.
 _MIN_ARCHIVE_ROWS = 100
 
+ARCHIVE_WEATHER_HOURLY = ("temperature_2m,relative_humidity_2m,surface_pressure,"
+                         "wind_speed_10m,precipitation")
+
 _ARCHIVE_MODES = ("historical", "archive", "auto")
 
 
@@ -221,8 +224,7 @@ def fetch_archive_training_data(
     }
     weather = _http_get_json(ARCHIVE_WEATHER_URL, {
         **common,
-        "hourly": "temperature_2m,relative_humidity_2m,surface_pressure,"
-                  "wind_speed_10m,precipitation",
+        "hourly": ARCHIVE_WEATHER_HOURLY,
         "wind_speed_unit": "ms",
     }, timeout)
     air = _http_get_json(ARCHIVE_AIR_URL, {
@@ -285,6 +287,20 @@ class AnomalyDetector:
             self.training_mode = "synthetic_fallback" if mode in _ARCHIVE_MODES else "synthetic"
             self.training_window = "deterministic synthetic normal distribution"
 
+        return self._fit(matrix, quiet=quiet)
+
+    def train_archive(self, weather: dict, air: dict) -> "AnomalyDetector":
+        """Fit recorded raw archive arrays offline using the historical path."""
+        matrix = _rows_from_archive(weather, air)
+        if matrix.shape[0] < _MIN_ARCHIVE_ROWS:
+            raise ValueError("recorded archive has too few usable training rows")
+        self.training_mode = "historical"
+        self.training_window = (f"{weather['hourly']['time'][0]} .. "
+                                f"{weather['hourly']['time'][-1]} UTC")
+        self.fallback_reason = None
+        return self._fit(matrix, quiet=True)
+
+    def _fit(self, matrix: np.ndarray, *, quiet: bool) -> "AnomalyDetector":
         self.n_train = int(matrix.shape[0])
         self.scaler.fit(matrix)
         self.model.fit(self.scaler.transform(matrix))
