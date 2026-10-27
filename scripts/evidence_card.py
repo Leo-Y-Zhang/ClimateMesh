@@ -110,7 +110,7 @@ def tiles(numbers):
     replay, bench = numbers["replay"], numbers["benchmark"]
     return [(f"{numbers['tests']:,}", "Collected tests"),
             (f"{numbers['source_lines']:,}", "Python lines · tests/venvs excluded"),
-            (f"{replay['heldout_weeks']:,}", "Held-out real weeks · 2023 + untouched 2024"),
+            (f"{replay['heldout_weeks']:,}", "Held-out real weeks · 2023, 2024"),
             (f"{numbers['nodes']:,}", "Illustrative London nodes"),
             (f"{numbers['channels']:,}", "Channels per reading"),
             (f"{numbers['sources']:,}", "Supported data provenances"),
@@ -153,7 +153,7 @@ def render_card(numbers, path=None, *, theme="dark"):
     write(0.065, 0.110, "Read → AI scoring → risk → alerts → database. Measured here; not a Pi estimate.",
           8.5, muted)
     replay = numbers["replay"]
-    write(0.065, 0.087, f"Event replays only; held-out weeks excluded. {replay['unique_hours']:,} unique recorded hours.",
+    write(0.065, 0.087, f"Events: {replay['unique_hours']:,} unique recorded hours. Held-out: {replay['heldout_weeks']:,} real weeks, all 20 nodes.",
           8.5, muted)
     write(0.065, 0.059, "Recorded data. Not a forecast. Not a field validation.", 10, weight="bold")
     write(0.065, 0.037, f"Git {numbers['commit']} (working tree) · Generated {numbers['generated']}", 8, muted)
