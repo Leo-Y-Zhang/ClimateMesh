@@ -6,7 +6,42 @@
 #
 # Run:  chmod +x setup_pi.sh && ./setup_pi.sh
 
-set -e
+set -euo pipefail
+
+kiosk=false
+uninstall=false
+dry_run=false
+for arg in "$@"; do
+    case "$arg" in
+        --kiosk) kiosk=true ;;
+        --uninstall) uninstall=true ;;
+        --dry-run) dry_run=true ;;
+        *) echo "Unknown option: $arg" >&2; exit 2 ;;
+    esac
+done
+if "$uninstall" && ! "$kiosk"; then
+    echo "--uninstall requires --kiosk" >&2
+    exit 2
+fi
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+kiosk_args=()
+if "$dry_run"; then kiosk_args+=(--dry-run); fi
+if "$uninstall"; then
+    python3 "$repo_dir/scripts/pi_kiosk.py" --uninstall "${kiosk_args[@]}"
+    exit
+fi
+if "$dry_run"; then
+    echo "WRITE $PWD/.venv/ (virtual environment)"
+    echo "RUN python3 -m venv .venv"
+    echo "RUN source .venv/bin/activate"
+    echo "RUN pip install --upgrade pip"
+    echo "RUN pip install -r requirements.txt"
+    echo "RUN python scripts/smoke_test.py"
+    if "$kiosk"; then
+        python3 "$repo_dir/scripts/pi_kiosk.py" --dry-run
+    fi
+    exit
+fi
 
 echo "=================================================="
 echo "  Climate Mesh - Raspberry Pi setup"
@@ -46,3 +81,7 @@ echo "    ssh -L 8501:localhost:8501 pi@<host>   then open http://localhost:8501
 echo ""
 echo "  Other scenarios: normal | flood | heatwave | smog | storm"
 echo "  Export evidence: python scripts/export_evidence.py"
+
+if "$kiosk"; then
+    python3 "$repo_dir/scripts/pi_kiosk.py"
+fi

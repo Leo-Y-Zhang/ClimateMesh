@@ -75,3 +75,13 @@ def test_render_summary_table_fail():
     ])
     assert "RESULT: FAIL" in table
     assert "(1/2 steps passed)" in table
+
+
+def test_skipped_suite_never_counts_as_pass():
+    results = [("smoke", True, "ok"), ("suite", None, "SKIPPED")]
+    assert not jv.overall_ok(results)
+    table = jv.render_summary_table(results)
+    assert "RESULT: PARTIAL" in table
+    assert "(1/2 steps passed)" in table
+    assert "SKIPPED" in table
+    assert "RESULT: PASS" not in table

@@ -46,6 +46,8 @@ PLAYBOOKS: dict[str, list[str]] = {
     "risk": [
         "Review the affected node on the dashboard and follow the playbook "
         "for the hazard shown as its main contributor.",
+        "Check when the reading was last updated and which data source it uses.",
+        "Keep monitoring the display; report a persistent concern to the site team.",
     ],
 }
 

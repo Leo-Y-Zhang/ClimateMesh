@@ -35,7 +35,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **242/242 automated tests pass** on Python 3.11, 3.12 and 3.13, and on 64-bit Arm Linux in CI; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **323/323 automated tests pass** in local Python 3.11 validation; CI is configured for Python 3.11/3.13 and 64-bit Arm Linux; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
 - The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -195,7 +195,7 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 242 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 323 tests + 2 demo cycles + export
 python scripts/evaluate.py         # detection and false-alarm rates vs a thresholds-only baseline
 ```
 
@@ -241,6 +241,90 @@ ssh -L 8501:localhost:8501 pi@<host>
 ```
 
 then open <http://localhost:8501> on the laptop.
+
+## Street display on the Pi
+
+The separate street display shows one site at a time: a large risk band and
+score, its plain-English explanation, three playbook actions, neighbour
+agreement, local time, and the reading's data-source badge. Demo and simulation
+remain labelled; readings or scores older than 30 seconds are replaced by
+**No fresh data: is the engine running?**
+
+From the repository directory, install the boot-to-display setup with:
+
+```bash
+./setup_pi.sh --kiosk
+```
+
+This does the normal setup, then enables two **systemd user** services: the
+engine in `auto` mode and the street app on `127.0.0.1:8502`. Chromium opens at
+desktop login under either Bookworm compositor (labwc or Wayfire), after waiting
+up to 60 seconds for the app. Chromium must already be installed (`chromium-browser`
+is preferred when present, otherwise `chromium`). The script prints these
+commands for you to run yourself:
+
+```bash
+sudo raspi-config nonint do_boot_behaviour B4   # desktop with autologin
+sudo raspi-config nonint do_blanking 1         # disable screen blanking
+```
+
+Reboot after configuring desktop autologin. No `loginctl enable-linger` is
+needed. The setup can be rerun safely. Preview with `./setup_pi.sh --kiosk --dry-run`;
+undo with `./setup_pi.sh --kiosk --uninstall` (also supports `--dry-run`). Uninstall
+removes the managed autostart blocks and services, restoring replaced files.
+It leaves the virtual environment and your desktop/blanking preferences intact.
+
+For a manual launch alongside an already-running engine:
+
+```bash
+python -m streamlit run dashboard/street.py --server.port 8502
+```
+
+Open <http://127.0.0.1:8502>. Add `?node=REGENTS-CANAL` to pin a site,
+`?palette=cb` for the existing colour-blind palette, or `?large=1` for larger
+type; combine options with `&`. Otherwise the top three sites rotate every
+8 seconds in score order; when all sites are SAFE, all rotate every 20 seconds.
+The responsive layout supports **800×480**, **720×1280 portrait**, **1280×720**
+and **1920×1080**, with readable text chosen by computed band-colour contrast.
+The main dashboard remains on port 8501.
+
+Optional screenshot generation: `python scripts/street_screenshots.py` runs an
+isolated demo/judge engine and saves four `docs/screenshots/street-*-demo.png`
+files. It skips cleanly if Playwright or its Chromium browser is unavailable;
+neither is a project requirement.
+
+## On-device evidence (pi_day)
+
+On the Pi, inside the virtual environment, run:
+
+```bash
+python scripts/pi_day.py
+```
+
+This writes a Markdown report and matching JSON under
+`evidence/pi-day/<UTC-date>-<hostname-hash8>`. It measures the platform, RAM,
+SoC temperature before/after and throttling where available; times the full
+test suite, CI benchmark, judge validation and hardware read; then runs the
+engine in `auto` mode for 60 seconds and records the **actual DB sources** and
+completed scoring rounds. Live cycle duration is explicitly unavailable because
+the DB does not record it; the separate benchmark supplies measured cycle time.
+`auto` may contact the live weather API, depending on hardware/network availability.
+The full run invokes the suite in the test, benchmark and judge steps, matching
+those tools' normal validation behavior.
+
+Use `python scripts/pi_day.py --quick` to skip the full test suite everywhere
+and the 60-second run. Quick judge validation marks its suite substep SKIPPED
+and its own result PARTIAL. Every report step has a timed PASS, FAIL or SKIPPED
+result with a reason, and failures do not prevent later steps running. The
+hardware diagnostic's exact output is retained, including **REAL HARDWARE** or
+**FALLBACK SIMULATION**; a successful diagnostic is not a claim of attached hardware.
+
+Reports open with five measured summary lines and end with “Send this file
+back”. Hostnames are hashed; usernames and home paths are scrubbed from captured
+output. Reports stay on-device and are never uploaded. For offline fixture tests,
+file paths can be overridden with `PI_DAY_MODEL_PATH`, `PI_DAY_OS_RELEASE_PATH`,
+`PI_DAY_MEMINFO_PATH` and `PI_DAY_THERMAL_PATH` (the thermal override bypasses
+`vcgencmd measure_temp`). Optional `--output-dir` changes the report directory.
 
 ## Run commands
 
@@ -520,7 +604,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (242 tests)
+pytest                               # the full unit-test suite (323 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

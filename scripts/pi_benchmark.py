@@ -110,11 +110,13 @@ def main() -> int:
     py = platform.python_version()
 
     tests_s = None
+    tests_ok = None
     if args.with_tests:
         t2 = time.perf_counter()
         proc = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
                               cwd=str(ROOT), capture_output=True, text=True)
         tests_s = time.perf_counter() - t2
+        tests_ok = proc.returncode == 0
         if proc.returncode != 0:
             print("WARNING: the test suite did not pass; not quoting its time.")
             tests_s = None
@@ -138,11 +140,16 @@ def main() -> int:
     # int() here and f"{...:.0f}" in the table above disagreed by a second on
     # anything that did not land on a whole number, so the same run printed two
     # different figures for the same measurement.
-    sentence += f", and the whole {f'test suite passes in {tests_s:.0f} s' if tests_s else 'test suite passes'}."
+    if tests_ok:
+        sentence += f", and the whole test suite passes in {tests_s:.0f} s."
+    elif tests_ok is False:
+        sentence += "; the test suite failed."
+    else:
+        sentence += "; the test suite was not run."
     print("  Sentence for the write-up (section 7):")
     print("  " + sentence)
     print("=" * 64)
-    return 0
+    return 1 if tests_ok is False else 0
 
 
 if __name__ == "__main__":
