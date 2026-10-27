@@ -69,6 +69,15 @@ HAZARD_OF = {"flood": "flood", "heatwave": "heatwave", "smog": "smog",
 ALERTING = (WARNING, CRITICAL)
 TICK = 0.0          # fixed time of day, so intensity is the only thing moving
 STUCK_WATER_M = 9.0  # a jammed ultrasonic water sensor reading right through
+DEFAULT_SEEDS = 30
+DEFAULT_STEP = 0.1
+STUCK_NODES = ("REGENTS-CANAL", "RIVER-LEA", "PUTNEY")
+
+
+def evaluation_frame_counts(seeds=DEFAULT_SEEDS, step=DEFAULT_STEP):
+    """Frame inventory for the default evaluation, shared with evidence cards."""
+    return {"quiet": seeds, "stuck": seeds * len(STUCK_NODES),
+            "event": seeds * len(HAZARD_OF) * int(round(1.0 / step))}
 
 
 def frame(scenario: str, intensity: float, seed: int,
@@ -123,9 +132,9 @@ def verdicts(readings: list[dict], detector: AnomalyDetector) -> dict[str, set[s
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Detection and false-alarm rates")
-    ap.add_argument("--seeds", type=int, default=30,
+    ap.add_argument("--seeds", type=int, default=DEFAULT_SEEDS,
                     help="noise realisations per point (default 30)")
-    ap.add_argument("--step", type=float, default=0.1,
+    ap.add_argument("--step", type=float, default=DEFAULT_STEP,
                     help="intensity step (default 0.1)")
     args = ap.parse_args()
 
@@ -161,7 +170,7 @@ def main() -> int:
     cried_wolf = {c: 0 for c in configs}
     trials = 0
     for seed in seeds:
-        for node_id in ("REGENTS-CANAL", "RIVER-LEA", "PUTNEY"):
+        for node_id in STUCK_NODES:
             got = verdicts(frame("none", 0.0, seed, stuck=node_id), detector)
             trials += 1
             for c in configs:
