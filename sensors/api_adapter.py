@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import http.client
 import json
+import math
+from datetime import datetime
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -26,15 +28,19 @@ from simulation.engine import _heat_index, _wind_chill
 OPEN_METEO_FORECAST = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_AIR = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
-# Per-environment sensitivity converting today's forecast daily precipitation
-# total (mm, Open-Meteo ``precipitation_sum``) to a water level proxy (m). River nodes respond most; urban least. Documented in the
-# write-up as a real design decision.
+# Per-environment sensitivity converting rain fallen since local midnight
+# (mm) to a water-level proxy (m). River nodes respond most; urban least.
 _PRECIP_SENSITIVITY = {
     "river": 0.15, "park": 0.08, "residential": 0.07, "school": 0.06, "urban": 0.05,
 }
 _BASE_WATER = {
     "river": 1.0, "park": 0.35, "residential": 0.30, "school": 0.25, "urban": 0.20,
 }
+
+
+def _water_level_proxy(environment: str, rain_since_midnight: float) -> float:
+    """Estimated metres from rain fallen since local midnight, never a gauge depth."""
+    return _BASE_WATER[environment] + _PRECIP_SENSITIVITY[environment] * rain_since_midnight
 
 
 class ApiUnavailable(RuntimeError):
@@ -82,7 +88,7 @@ class ApiAdapter(SensorAdapter):
             "latitude": lats, "longitude": lons,
             "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,"
                        "pressure_msl,apparent_temperature",
-            "daily": "precipitation_sum",
+            "hourly": "precipitation",
             # Request m/s explicitly — Open-Meteo defaults to km/h, which the
             # risk engine would otherwise misread as gale-force wind.
             "wind_speed_unit": "ms",
@@ -126,13 +132,25 @@ class ApiAdapter(SensorAdapter):
                     f"{node['node_id']}")
             apparent = cur.get("apparent_temperature", temp)
 
-            precip = 0.0
-            daily = w.get("daily", {})
-            if daily.get("precipitation_sum"):
-                precip = daily["precipitation_sum"][0] or 0.0
+            # The API's current and hourly times use the same requested local
+            # timezone. Never include rain from forecast hours later today.
+            try:
+                current = datetime.fromisoformat(cur["time"]).replace(minute=0, second=0, microsecond=0)
+                hourly = w["hourly"]
+                pairs = list(zip(hourly["time"], hourly["precipitation"], strict=True))
+                elapsed = [(datetime.fromisoformat(t), value) for t, value in pairs
+                           if t[:10] == cur["time"][:10]
+                           and datetime.fromisoformat(t) <= current]
+                if len(elapsed) != current.hour + 1 or any(
+                        value is None or not math.isfinite(float(value)) for _, value in elapsed):
+                    raise ValueError("incomplete elapsed hourly precipitation")
+                precip = sum(float(value) for _, value in elapsed)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ApiUnavailable(
+                    f"live response has no usable elapsed rainfall for {node['node_id']}") from exc
 
             env = node["environment"]
-            water = _BASE_WATER[env] + _PRECIP_SENSITIVITY[env] * precip
+            water = _water_level_proxy(env, precip)
             aqi = _eu_aqi_to_us_scale(a.get("current", {}).get("european_aqi"))
 
             # Prefer Open-Meteo's apparent temperature; derive locally if absent.

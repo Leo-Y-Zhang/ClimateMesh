@@ -1,0 +1,18 @@
+==============================================================================
+  Climate Mesh - Demo Tour (deterministic, synthetic data, no hardware)
+==============================================================================
+  Scenario     Avg   Max  Worst node             Level     Alerts
+------------------------------------------------------------------------------
+  normal       3.9  11.4  Greenwich              SAFE           0
+  flood       43.0 100.0  Regent's Canal (Little Venice) CRITICAL       4
+  heatwave    78.8 100.0  Brixton                CRITICAL      12
+  smog        82.7 100.0  Brixton                CRITICAL      15
+  storm       98.1 100.0  Brixton                CRITICAL      20
+------------------------------------------------------------------------------
+  Risk is 0-100. Every reading above is source=demo, is_simulated=True.
+==============================================================================
+
+  Sample explanation (flood, Regent's Canal (Little Venice)):
+    Flood risk rising near Regent's Canal (Little Venice). 1 of 4 nearby nodes see the same trend. Risk score 100/100. Main contributors: critical water level (4.8 m), falling pressure (996 hPa). Supporting factor: very high humidity (99%).
+
+  RESULT: PASS (5/5 scenarios, deterministic, offline)

@@ -41,6 +41,7 @@ OUT_DIR = Path(__file__).parent.parent / "evidence"
 # Plain-English meaning of each provenance, shown next to its count so a judge
 # can immediately see what is physical, live, demo, or generated.
 SOURCE_MEANING = {
+    "archive": "recorded Open-Meteo / gauge archive data",
     "hardware": "real physical sensor",
     "api": "live Open-Meteo data",
     "demo": "deterministic demo / digital-twin data",

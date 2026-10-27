@@ -57,4 +57,4 @@ def test_all_scenarios_generate_full_mesh():
 
 
 def test_valid_sources_constant():
-    assert set(VALID_SOURCES) == {"simulation", "demo", "api", "hardware"}
+    assert set(VALID_SOURCES) == {"simulation", "demo", "api", "hardware", "archive"}

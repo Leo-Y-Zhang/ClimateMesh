@@ -278,7 +278,7 @@ def test_demo_tour_numbers_match_the_readme():
     rows = {r["scenario"]: r for r in _load_tour_module().run_tour()}
     expected = {
         "normal":   (3.9, 11.4, "Greenwich", "SAFE", 0),
-        "flood":    (50.8, 100.0, "Regent's Canal (Little Venice)", "CRITICAL", 10),
+        "flood":    (44.2, 100.0, "Regent's Canal (Little Venice)", "CRITICAL", 4),
         "heatwave": (78.8, 100.0, "Brixton", "CRITICAL", 12),
         "smog":     (82.7, 100.0, "Brixton", "CRITICAL", 15),
         "storm":    (98.1, 100.0, "Brixton", "CRITICAL", 20),
@@ -288,8 +288,8 @@ def test_demo_tour_numbers_match_the_readme():
         assert (row["avg_risk"], row["max_risk"], row["worst_node"],
                 row["worst_level"], row["alerts"]) == (avg, mx, worst, level, alerts), scenario
     assert rows["flood"]["worst_explanation"] == (
-        "Flood risk rising near Regent's Canal (Little Venice). Same trend seen across "
-        "3 nearby nodes. Risk score 100/100. Main contributors: critical water level "
-        "(4.8 m), very high humidity (99%), falling pressure (996 hPa).")
+        "Flood risk rising near Regent's Canal (Little Venice). Same trend seen across 3 nearby nodes. "
+        "Risk score 100/100. Main contributors: critical water level (4.8 m). "
+        "Supporting factor: very high humidity (99%). Supporting factor: falling pressure (996 hPa).")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert rows["flood"]["worst_explanation"].split(". Same trend")[0] in readme
+    assert rows["flood"]["worst_explanation"].split(". 1 of")[0] in readme

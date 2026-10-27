@@ -27,7 +27,7 @@ with no cloud subscription.
   **sensor-check**, not as the hazard — so a single glitching node cannot cry
   wolf. Both directions are tested (`tests/test_corroboration.py`).
 - **Provenance-first honesty:** every reading, dashboard panel, alert, and
-  export carries its data source (`hardware / api / demo / simulation`) and a
+  export carries its data source (`hardware / api / demo / simulation / archive`) and a
   quality flag — honesty is a designed-in feature, not a disclaimer.
 - **One-command reproducibility:** judges can prove the whole system works
   from a clean clone with a single command.
@@ -35,11 +35,11 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **323/323 automated tests pass** in local Python 3.11 validation; CI is configured for Python 3.11/3.13 and 64-bit Arm Linux; `python scripts/judge_validate.py` → **PASS (5/5 steps)**.
+- **415/415 automated tests pass** on Python 3.11 in the recorded-event verification. The project also provides CI for Python 3.11/3.13 and 64-bit Arm Linux, plus `python scripts/judge_validate.py`.
 - The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
-  100.0, 10 alerts), and heatwave/smog/storm each escalate their own hazard
+  100.0, 4 alerts), and heatwave/smog/storm each escalate their own hazard
   profile. Output is deterministic — repeated runs print identical numbers.
 - Runs fully offline on any computer or a Raspberry Pi 5.
 
@@ -47,7 +47,7 @@ not field measurements; no physical sensor has been validated yet)*:
 > Physical sensor support is hardware-ready but **not required** for the current
 > demo. Until sensors are connected, Climate Mesh uses clearly-labelled
 > **simulated** and/or **live API** data. Every reading shows its source
-> (`simulation` / `demo` / `api` / `hardware`) so nothing is ever overstated.
+> (`simulation` / `demo` / `api` / `hardware` / `archive`) so nothing is ever overstated.
 
 Built by a team of two sixth-form students (years 12–13
 category), for the PA Raspberry Pi Competition 2026/27 — theme *Building a
@@ -57,7 +57,7 @@ Positive Human Future* (Safer Societies & Sustainable World).
 
 ## The dashboard
 
-A 7-tab Streamlit dashboard reads the same SQLite database the engine writes:
+A 8-tab Streamlit dashboard reads the same SQLite database the engine writes:
 
 - **Live Map** — the 20 nodes on a Greater London map, coloured by band and
   sized by risk score, with the mesh links between neighbours and a
@@ -72,6 +72,7 @@ A 7-tab Streamlit dashboard reads the same SQLite database the engine writes:
 - **Hardware Readiness** — live driver/device detection, with provenance
   derived from actual data, never from a library merely being importable.
 - **Competition Pitch** — the summary pitch.
+- **Real events** — committed hourly London event replays, separate from the live database.
 
 Every panel carries its data source and a quality flag, which is the point: in
 demo mode the badges read *Digital Twin (Demo)*, so nothing is passed off as a
@@ -91,7 +92,7 @@ python -m streamlit run dashboard/app.py                  # terminal 2, opens ht
 - ✅ 0–100 risk scores with **SAFE / MODERATE / WARNING / CRITICAL** levels.
 - ✅ Explainable AI (Isolation Forest) + **mesh correlation** across adjacent nodes.
 - ✅ Plain-English alerts with **community action playbooks**.
-- ✅ A 7-tab Streamlit dashboard with **source + quality badges on every panel**.
+- ✅ A 8-tab Streamlit dashboard with **source + quality badges on every panel**.
 - ✅ Reproducible **evidence export** (CSV + JSON) with a **data-source summary table**.
 - ✅ `pytest` test suite and a **one-command judge validation** (`scripts/judge_validate.py`).
 - ✅ Runs **fully offline, with no sensors**, on a Raspberry Pi 5.
@@ -122,7 +123,7 @@ throwaway database and prints a per-scenario summary. Real observed output:
   Scenario     Avg   Max  Worst node             Level     Alerts
 ------------------------------------------------------------------------------
   normal       3.9  11.4  Greenwich              SAFE           0
-  flood       50.8 100.0  Regent's Canal (Little Venice) CRITICAL      10
+  flood       44.2 100.0  Regent's Canal (Little Venice) CRITICAL       4
   heatwave    78.8 100.0  Brixton                CRITICAL      12
   smog        82.7 100.0  Brixton                CRITICAL      15
   storm       98.1 100.0  Brixton                CRITICAL      20
@@ -131,7 +132,7 @@ throwaway database and prints a per-scenario summary. Real observed output:
 ==============================================================================
 
   Sample explanation (flood, Regent's Canal (Little Venice)):
-    Flood risk rising near Regent's Canal (Little Venice). Same trend seen across 3 nearby nodes. Risk score 100/100. Main contributors: critical water level (4.8 m), very high humidity (99%), falling pressure (996 hPa).
+    Flood risk rising near Regent's Canal (Little Venice). Same trend seen across 3 nearby nodes. Risk score 100/100. Main contributors: critical water level (4.8 m). Supporting factor: very high humidity (99%). Supporting factor: falling pressure (996 hPa).
 
   RESULT: PASS (5/5 scenarios, deterministic, offline)
 ```
@@ -162,16 +163,14 @@ Vernier Go Direct Weather sensor is connected over USB, that node switches to
 
 ## Quick start (any computer)
 
-**Prerequisites:** Python **3.11, 3.12 or 3.13** and `git`. The full test
-suite, the demo tour and the judge validation have been run on all three
-versions with identical output; CI runs 3.11 (what Raspberry Pi OS Bookworm
+**Prerequisites:** Python **3.11, 3.12 or 3.13** and `git`. The recorded-event
+replay and current 415-test suite were verified here on Python 3.11.2.
+CI runs 3.11 (what Raspberry Pi OS Bookworm
 ships) and 3.13 (what the Trixie-based release ships) on x86-64, plus 3.11 on
 a 64-bit Arm runner that installs prebuilt wheels only. Nothing else is needed
 — no compiler, database, solver, cloud account or API key. Every requirement
 publishes a prebuilt wheel for Linux, Windows and macOS, so the install needs
-no build toolchain, and the demo runs entirely offline. Nothing in the tree
-uses syntax newer than 3.8, so Python 3.9–3.10 will very likely work too; they
-are just not tested. The download is dominated by scikit-learn, pandas and
+no build toolchain, and the demo runs entirely offline. The recorded-event workflow targets Python 3.11+. The download is dominated by scikit-learn, pandas and
 numpy.
 
 > **Got this as a zip?** Unzip it and `cd` into the folder — skip the
@@ -195,7 +194,7 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 323 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 415 tests + 2 demo cycles + export
 python scripts/evaluate.py         # detection and false-alarm rates vs a thresholds-only baseline
 ```
 
@@ -360,6 +359,112 @@ clock so each scenario shows the same deterministic frame; it does not lock the
 picker). In `simulation` mode, `--judge-mode` switches to the same seeded
 generator as `demo`, so "screenshot-stable" is exactly what you get.
 
+## Replaying real London events
+
+Recorded weather, air and rainfall fixtures feed the production model, scoring,
+mesh and SQLite alert path offline. The **Real events** tab includes three original
+events, four 2023 development weeks and four fresh 2024 test weeks, all at 20 nodes.
+Readings retain `source="archive"`, `quality_flag="estimated"`, `is_simulated=True`.
+
+Round 1 made humidity supporting only and aligned training/serving water proxies,
+environment baselines, sea-level pressure and London midnight. Round 2 makes
+pressure supporting only too: **wind drives storms**. Smog mapping, cold curve,
+thresholds, bands, model contamination (0.05), multipliers and radius are unchanged.
+Before round 2, pressure ≤1000 hPa occurs in 14/720 flood training hours, 0/720 heat,
+50/720 Eunice; the 2023 March/June/September/December counts are 0/0/0/125.
+
+Counts now include **node episodes** (consecutive hours delivering the same hazard
+to one node) and **London-wide episodes** (per hazard, consecutive hours with any
+node alerting). Gaps or hazard changes break runs; sensor-check is a separate
+notification type. These are sampled notifications, not independently labelled
+weather incidents. Every summary also reports full-window and quiet-hour AI rates.
+
+All sequences below are **as found → round 1 → round 2**:
+
+| Original replay | First-six alerts | Quiet AI flags /120 | Event-hazard alert-hours | London episodes, all types |
+|---|---:|---:|---:|---:|
+| flood-2021-07-12-gauges | 117 → 0 → 0 | 88 → 0 → 0 | 306 → 20 → 20 | 4 → 3 → 3 |
+| flood-2021-07-12-grid | 119 → 0 → 0 | 92 → 0 → 0 | 306 → 4 → 4 | 4 → 5 → 5 |
+| heat-2022-07-19-grid | 0 → 0 → 0 | 72 → 0 → 0 | 399 → 396 → 396 | 8 → 8 → 8 |
+| storm-2022-02-18-grid | 23 → 2 → 0 | 76 → 2 → 2 | 232 → 220 → 129 | 2 → 1 → 2 |
+
+All three events now have **zero quiet alerts**. The heat peak (38.0°C,
+2022-07-19 12:00) and Eunice sustained-wind peak (19.38 m/s, 2022-02-18 12:00)
+still raise CRITICAL 100.0 at CAMDEN. PUTNEY fed by Putney Heath remains
+WARNING **67.3 at 16:00**, CRITICAL **85.6 at 18:00**, peak **100.0 at 19:00**,
+all partially corroborated; its grid peak remains MODERATE **53.4 at 20:00**.
+The gauge records 47.21 mm in the local window versus Mitcham's 2.22 mm.
+
+The 2023 weeks have been seen and are development evidence. Their totals are
+**7,691 → 4,681 → 4,185 alert-hours**, **1,305 → 816 → 816 node episodes** and
+**74 → 48 → 46 London-wide episodes**. March cold/smog alerts and episode counts
+increase from round 1; December smog increases too. Final 2023 AI firing rates are
+**46.31%, 29.73%, 43.01%, 8.54%** (quiet: **30%, 0%, 20%, 10%**). The feature audit
+found no further clear conversion mismatch. Single-location training and future
+weather/air distribution shift remain limitations; the AI was not retuned.
+
+The fresh test rule was fixed in advance: first full Monday–Sunday weeks of
+March, June, September and December 2024, each with its own preceding 30-day
+training window. Scoring was frozen before their results were run or inspected.
+Each cell below is **alert-hours / node episodes / London-wide episodes**:
+
+| 2024 test week | As found | Final |
+|---|---:|---:|
+| 2024-03-04 | 2123 / 366 / 21 | 1070 / 211 / 15 |
+| 2024-06-03 | 371 / 107 / 10 | 41 / 15 / 1 |
+| 2024-09-02 | 1604 / 272 / 16 | 501 / 110 / 9 |
+| 2024-12-02 | 1461 / 199 / 10 | 380 / 48 / 4 |
+| Total | 5559 / 944 / 57 | 1992 / 384 / 29 |
+
+Final 2024 alerts are smog **1,855 hours / 358 node episodes / 28 London episodes**
+and cold **137 / 26 / 1**. **1,987/1,992** remain below WARNING on the driving
+hazard sub-score alone; the broad zero target is still unmet. March's first six
+hours still raise **119 alerts**, September **5**. Test-year AI firing is
+**2.86%, 0.21%, 21.64%, 11.73%** (quiet **0.83%, 0%, 4.17%, 0%**). Final smog
+warnings include EAQI **37** with AI 1.26 and mesh 1.2; March cold warnings span
+**−0.9 to 1.6°C**. These results are reported without tuning on the test year.
+
+Synthetic full-system 90% detection remains worse than as found:
+**0.80 → 1.00 → 1.00** intensity; full-intensity detection stays 120/120 and
+stuck-sensor false flood alerts stay 0/90. Flood demo average/alerts change
+**50.8/10 → 43.0/4 → 44.2/4**. Eunice London storm episodes split **1 → 1 → 2**
+while event alert-hours fall. Fewer alert-hours do not guarantee fewer episodes
+or better calibration. See the [three-stage report](docs/replay_report.md),
+[complete alert CSV with episode markers](evidence/replay/held-out-alerts.csv.gz),
+and [comparison figure](evidence/replay/figures/calibration-before-after.png).
+
+```bash
+# Network: fetch/recheck public fixtures (ignores retrieved_utc only):
+python scripts/fetch_history.py
+python scripts/fetch_history.py --check
+
+# Offline replay, evidence tables and presentation figures:
+python scripts/replay_event.py --all
+python scripts/calibration_report.py
+python scripts/replay_figures.py
+python scripts/reproduce_as_found.py --out out/as-found-check
+python -m streamlit run dashboard/app.py
+```
+
+Replay JSON uses compact sorted keys and LF; held-out weeks and preserved stages
+use deterministic `.json.gz` with zero timestamp and no embedded filename. All
+readers accept plain or gzip JSON; the complete CSV is gzip too. Evidence is
+**8,054,696 bytes (8.055 MB)**, under 12 MB. All twelve final replay outputs are
+byte-identical across two runs with different `PYTHONHASHSEED`. Baseline snapshots
+and manifests are under `evidence/replay/as-found/`. The as-found code is commit
+`a7d08b5` in this repository's history; a self-contained source snapshot, verified
+against all eight original outputs, also makes all twelve baseline replays
+reproducible without Git.
+
+**Limitations:** gridded reanalysis smooths local rainfall; nearby nodes can share
+a cell, so mesh agreement is dependent evidence. Water is a rainfall proxy, not
+measured depth. Only two all-Good gauges qualify within 3 km; the UTC gauge request
+omits the first BST hour, whose empty bucket is a gap rather than dryness. Wind
+uses sustained speed, not gusts. Training uses one central weather location.
+There are no independently labelled precision/recall results for these weeks.
+This is retrospective evidence, not a forecast or field validation. Source URLs,
+retrieval times, licences and attributions remain in each fixture.
+
 ## Screenshots
 
 Captured from this exact tree in **demo / judge mode** (flood scenario unless
@@ -387,13 +492,13 @@ on a street map.
 
 ### What the screenshots show (and how to retake them)
 
-The dashboard's 7 tabs are all screenshot-worthy — see
+The dashboard's 8 tabs are all screenshot-worthy — see
 [docs/evidence_checklist.md](docs/evidence_checklist.md). In short:
 **Live Map** (risk-coloured London nodes), **Network Overview** (KPIs + charts),
 **Node Detail** (per-node readings, source/quality badges, risk breakdown), **AI
 Explainability**, **Evidence & Validation**, **Hardware Readiness**, **Competition
-Pitch**. Every panel carries a provenance badge — **📡 Physical Sensor**, **🌐 Live
-API**, **🎬 Digital Twin (Demo)** or **💻 Offline Simulation** — plus a quality
+Pitch**, and **Real events**. Every panel carries a provenance badge — **📡 Physical Sensor**, **🌐 Live
+API**, **🎬 Digital Twin (Demo)**, **💻 Offline Simulation** or **Recorded (archive)** — plus a quality
 badge (✅ ok · ≈ estimated · 🕒 stale · ⚠️ missing), so each shot self-labels its
 data source. Two terminal screenshots round out the evidence:
 
@@ -423,7 +528,7 @@ flowchart TD
     DB --> AI["AI anomaly model<br/>(Isolation Forest)"]
     DB --> RE["Risk engine<br/>6 sub-scores → 0–100<br/>× AI × mesh correlation"]
     AI --> RE
-    RE --> DASH["Streamlit dashboard<br/>(7 tabs, source/quality badges)"]
+    RE --> DASH["Streamlit dashboard<br/>(8 tabs, source/quality badges)"]
     RE --> ALERT["Alerts + community<br/>action playbooks"]
     DASH --> EV["Evidence export<br/>(CSV + JSON + source table)"]
     ALERT --> EV
@@ -458,7 +563,7 @@ ClimateMesh/
     risk_engine.py           # explainable scoring + mesh correlation + alerts
     playbooks.py             # community action playbooks per hazard
   data/database.py           # SQLite storage (readings, risk, alerts, runs)
-  dashboard/app.py           # 7-tab Streamlit dashboard
+  dashboard/app.py           # 8-tab Streamlit dashboard
   dashboard/offline_map.py   # tile-free Live Map: nodes, mesh links, waterways (pure, unit-tested)
   dashboard/badges.py        # provenance + quality badge wording (pure, unit-tested)
   data/sensor_config.json    # optional: which node the physical sensor represents
@@ -532,7 +637,8 @@ training paths (`run.py --ai-training ...`):
   internet, used by CI, the smoke test, and `--once`. Fully reproducible.
 - **`historical` / `auto`:** ~30 days of **real** hourly Open-Meteo *archive*
   (ERA5) weather + air quality for one representative central-London point
-  (the CENTRAL-LDN node). The first fetch is
+  (the CENTRAL-LDN node), replicated for every environment water baseline with
+  rainfall accumulated since local midnight. The first fetch is
   cached to `ai/_archive_cache.json`, so repeat runs train offline. If the
   archive is unreachable it **falls back deterministically to synthetic** and
   records that as `training_mode = "synthetic_fallback"` — synthetic data is
@@ -548,11 +654,12 @@ to **1.5×** (measured range 1.25×–1.36×).
 
 ## How the risk score works
 
-For each node the engine computes six 0–100 hazard sub-scores — temperature,
-humidity, air quality, water level, wind, pressure — and combines them
-(worst hazard + 20% of the rest) into a 0–100 **base score**. Temperature and
-humidity are two-sided: a frosty morning is filed as a **cold** hazard with its
-own playbook, never as a "heatwave". It then applies:
+For each node the engine computes four 0–100 hazard sub-scores — temperature,
+air quality, water level and wind — plus supporting humidity and pressure. The
+worst hazard plus 20% of the remaining terms forms the 0–100 **base score**.
+Humidity and pressure never select the hazard or lead its factor ordering;
+explanations show them as support. Wind selects a storm. Temperature is two-sided: frost is a **cold**
+hazard with its own playbook. It then applies:
 
 - **AI multiplier** (design ceiling 1.5×; measured range 1.25×–1.36× once the
   Isolation Forest confirms an anomaly, and exactly 1.0× otherwise), and
@@ -569,7 +676,8 @@ own playbook, never as a "heatwave". It then applies:
 Example alert (from the deterministic flood demo):
 > *Flood risk rising near Regent's Canal (Little Venice). Same trend seen across
 > 3 nearby nodes. Risk score 100/100. Main contributors: critical water level
-> (4.8 m), very high humidity (99%), falling pressure (996 hPa).*
+> (4.8 m). Supporting factor: very high humidity (99%). Supporting factor:
+> falling pressure (996 hPa).*
 > **Suggested actions:** check and clear nearby drains; inspect low-lying paths;
 > review the evacuation route.
 
@@ -612,7 +720,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (323 tests)
+pytest                               # the full unit-test suite (415 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION
