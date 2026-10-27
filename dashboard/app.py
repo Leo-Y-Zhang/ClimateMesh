@@ -103,6 +103,13 @@ def _corroboration_line(row) -> str:
                               row.get("correlated_count"), row.get("mesh_degree"))
 
 
+def _by_risk(frame: pd.DataFrame) -> pd.DataFrame:
+    """Highest score first, ties by node id, with a stable sort, so every panel
+    that names "the worst node" names the same one (pandas' default quicksort
+    orders ties arbitrarily, which differed between x86 and Arm)."""
+    return frame.sort_values(["score", "node_id"], ascending=[False, True], kind="stable")
+
+
 def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
     """The answer to "so what do I do?", on the first screen rather than the third.
 
@@ -110,8 +117,7 @@ def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
     stored one; until now nothing in the dashboard displayed it, so a reader
     who found the red node still had nowhere to go.
     """
-    acting = merged[merged["level"].isin(ACTING_LEVELS)].sort_values(
-        "score", ascending=False)
+    acting = _by_risk(merged[merged["level"].isin(ACTING_LEVELS)])
     if acting.empty:
         st.success("**Nothing to act on.** No node is at WARNING or CRITICAL. "
                    "The map below shows the current score at every node.")
@@ -225,7 +231,7 @@ with banner:
     # From `merged`, the same frame the map and the Act-now panel use, so the
     # header can never name a node the panel below it does not.
     if not merged.empty:
-        _worst = merged.sort_values("score", ascending=False).iloc[0]
+        _worst = _by_risk(merged).iloc[0]
         c2.metric(f"Highest risk · {score_text(_worst['score'])} {_worst['level']}",
                   _node_name(_worst["node_id"]))
     else:
@@ -262,8 +268,7 @@ with banner:
 if not merged.empty:
     components.html(read_aloud_html(spoken_summary(merged.to_dict("records"))), height=70)
     with st.expander("Text-message alert (preview)"):
-        acting = merged[merged["level"].isin(ACTING_LEVELS)].sort_values(
-            "score", ascending=False)
+        acting = _by_risk(merged[merged["level"].isin(ACTING_LEVELS)])
         if not acting.empty:
             message = sms_alert(acting.iloc[0].to_dict())
             st.code(message, language=None, wrap_lines=True)
