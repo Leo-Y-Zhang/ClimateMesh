@@ -1,4 +1,4 @@
-name: Pi-day evidence on 64-bit Arm
+name: Pi day
 
 # Runs the full on-device evidence script on a real 64-bit Arm Linux machine
 # (GitHub's Arm runner), the closest hardware to the Pi that CI offers. The
@@ -28,6 +28,6 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pi-day-arm64
+          name: pi-day-report
           path: evidence/pi-day/
           if-no-files-found: error
