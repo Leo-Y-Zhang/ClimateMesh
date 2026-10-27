@@ -1,0 +1,5 @@
+evidence/replay/as-found/holdout-2023-03-06-grid.json {'cold': 320, 'flood': 1437, 'sensor-check': 20, 'smog': 226, 'storm': 486}
+evidence/replay/as-found/holdout-2023-06-05-grid.json {'flood': 173, 'smog': 505}
+evidence/replay/as-found/holdout-2023-09-04-grid.json {'flood': 793, 'heatwave': 60, 'sensor-check': 1, 'smog': 1388}
+evidence/replay/as-found/holdout-2023-12-04-grid.json {'flood': 1898, 'sensor-check': 1, 'smog': 104, 'storm': 279}
+All four committed baseline replays reproduced exactly

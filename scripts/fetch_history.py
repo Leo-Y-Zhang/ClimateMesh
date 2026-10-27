@@ -23,6 +23,14 @@ EVENTS = {
     "flood-2021-07-12": ("2021-07-12", "2021-07-12", "London flash floods, 12 July 2021"),
     "heat-2022-07-19": ("2022-07-18", "2022-07-19", "UK record heat, 18-19 July 2022"),
     "storm-2022-02-18": ("2022-02-18", "2022-02-18", "Storm Eunice, 18 February 2022"),
+    "holdout-2023-03-06": ("2023-03-06", "2023-03-12", "Held-out March 2023"),
+    "holdout-2023-06-05": ("2023-06-05", "2023-06-11", "Held-out June 2023"),
+    "holdout-2023-09-04": ("2023-09-04", "2023-09-10", "Held-out September 2023"),
+    "holdout-2023-12-04": ("2023-12-04", "2023-12-10", "Held-out December 2023"),
+    "holdout-2024-03-04": ("2024-03-04", "2024-03-10", "Test March 2024"),
+    "holdout-2024-06-03": ("2024-06-03", "2024-06-09", "Test June 2024"),
+    "holdout-2024-09-02": ("2024-09-02", "2024-09-08", "Test September 2024"),
+    "holdout-2024-12-02": ("2024-12-02", "2024-12-08", "Test December 2024"),
 }
 GRID_HOURLY = ("temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,"
                "wind_gusts_10m,pressure_msl,apparent_temperature")
@@ -32,7 +40,7 @@ GAUGE_PARAMS = {"observedProperty": "rainfall", "lat": 51.51, "long": -0.12,
 
 
 def json_text(payload):
-    return json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n"
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
 
 
 def without_retrieved(value):
@@ -98,8 +106,11 @@ def fetch_event(event_id):
     train_common = {"latitude": ARCHIVE_LAT, "longitude": ARCHIVE_LON,
                     "start_date": train_begin.astimezone(timezone.utc).date().isoformat(),
                     "end_date": training_end.isoformat(), "timezone": "UTC"}
+    # Preserve surface pressure too for original-code reproduction on the fresh
+    # test year. Final training reads pressure_msl exclusively.
+    training_channels = ARCHIVE_WEATHER_HOURLY + (",surface_pressure" if '2024' in event_id else "")
     tw = get("training", ARCHIVE_WEATHER_URL,
-             {**train_common, "hourly": ARCHIVE_WEATHER_HOURLY, "wind_speed_unit": "ms"})
+             {**train_common, "hourly": training_channels, "wind_speed_unit": "ms"})
     ta = get("training", ARCHIVE_AIR_URL, {**train_common, "hourly": "european_aqi"})
     # A UTC request for the preceding date includes local event midnight in BST.
     # Select exactly the preceding 30 local dates, preserving all raw values.
@@ -139,7 +150,9 @@ def fetch_event(event_id):
                                         for r in sorted(items, key=lambda r: r["dateTime"])]})
     return {"event_id": event_id, "title": title, "timezone": "Europe/London",
             "window": [start, end], "provenance": provenance, "hours": hours,
-            "nodes": nodes, "training": training, "gauges": gauges}
+            "nodes": nodes, "training": training, "gauges": gauges,
+            "grid_cells": {node["node_id"]: {"latitude": w["latitude"], "longitude": w["longitude"]}
+                           for node, w in zip(NODES, weather)}}
 
 
 def main():

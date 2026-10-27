@@ -18,7 +18,7 @@ from sensors.simulated_adapter import SimulatedAdapter
 EXPECTED = {
     #             sub-scores only                                    with AI + mesh
     "normal":   ({"SAFE": 20},                                       {"SAFE": 20}),
-    "flood":    ({"CRITICAL": 4, "MODERATE": 8, "SAFE": 8},          {"CRITICAL": 4, "WARNING": 6, "MODERATE": 2, "SAFE": 8}),
+    "flood":    ({"CRITICAL": 4, "MODERATE": 8, "SAFE": 8},          {"CRITICAL": 4, "MODERATE": 8, "SAFE": 8}),
     "heatwave": ({"CRITICAL": 8, "WARNING": 4, "MODERATE": 8},       {"CRITICAL": 11, "WARNING": 1, "MODERATE": 8}),
     "smog":     ({"CRITICAL": 12, "MODERATE": 8},                    {"CRITICAL": 12, "WARNING": 3, "MODERATE": 5}),
     "storm":    ({"CRITICAL": 5, "WARNING": 15},                     {"CRITICAL": 19, "WARNING": 1}),
@@ -48,7 +48,8 @@ def test_worked_examples_in_the_writeup(detector):
     flood = {r["node_id"]: r for r in compute_all(SimulatedAdapter(demo=True).read_all("flood", tick=0.0), detector)}
     hyde = flood["HYDE-PARK"]
     assert hyde["mesh_multiplier"] == 1.2 and hyde["correlated_count"] == 4
-    assert hyde["score"] == 69.6 and hyde["level"] == "WARNING"
+    assert hyde["score"] == 49.2 and hyde["level"] == "MODERATE"
+    assert hyde["dominant_hazard"] == "flood"
     canal = flood["REGENTS-CANAL"]
     assert canal["score"] == 100.0 and canal["level"] == "CRITICAL"
     heat = {r["node_id"]: r for r in compute_all(SimulatedAdapter(demo=True).read_all("heatwave", tick=0.0), detector)}

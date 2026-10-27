@@ -1,0 +1,12 @@
+holdout-2024-03-04 / grid: peak 100.0; alerts {'cold': 137, 'smog': 933}; damped nodes ['DULWICH', 'REGENTS-CANAL', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  Episodes: 211 per-node, 15 London-wide; AI firing 96/3360 (2.86%); quiet 0.83%
+  First 6 hours: peak 100.0, AI amplified 1 node-hours, alerts {'cold': 100, 'smog': 19}. Wrote evidence/replay/holdout-2024-03-04-grid.json.gz
+holdout-2024-06-03 / grid: peak 75.9; alerts {'smog': 41}; damped nodes ['DULWICH', 'REGENTS-CANAL', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  Episodes: 15 per-node, 1 London-wide; AI firing 7/3360 (0.21%); quiet 0.00%
+  First 6 hours: peak 30.5, AI amplified 0 node-hours, alerts {}. Wrote evidence/replay/holdout-2024-06-03-grid.json.gz
+holdout-2024-09-02 / grid: peak 100.0; alerts {'smog': 501}; damped nodes ['DULWICH', 'HAMPSTEAD', 'REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER', 'WALTHAMSTOW', 'WIMBLEDON']
+  Episodes: 110 per-node, 9 London-wide; AI firing 727/3360 (21.64%); quiet 4.17%
+  First 6 hours: peak 74.7, AI amplified 5 node-hours, alerts {'smog': 5}. Wrote evidence/replay/holdout-2024-09-02-grid.json.gz
+holdout-2024-12-02 / grid: peak 100.0; alerts {'smog': 380}; damped nodes ['CAMDEN', 'DULWICH', 'HAMPSTEAD', 'REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER', 'VICTORIA-PARK']
+  Episodes: 48 per-node, 4 London-wide; AI firing 394/3360 (11.73%); quiet 0.00%
+  First 6 hours: peak 21.8, AI amplified 0 node-hours, alerts {}. Wrote evidence/replay/holdout-2024-12-02-grid.json.gz

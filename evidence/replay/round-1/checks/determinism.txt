@@ -1,0 +1,1 @@
+PASS: 8 replay JSONs byte-identical with PYTHONHASHSEED=1 and 987654; literal LF on both runs.

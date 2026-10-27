@@ -35,6 +35,9 @@ import math
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from config.nodes import ENVIRONMENTS
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
@@ -44,8 +47,7 @@ from sklearn.preprocessing import StandardScaler
 # API adapter so historical fetching behaves identically (raises ApiUnavailable
 # on any network/timeout/OS error, never invents data).
 from sensors.api_adapter import (
-    ApiUnavailable, _BASE_WATER, _PRECIP_SENSITIVITY, _eu_aqi_to_us_scale,
-    _http_get_json,
+    ApiUnavailable, _eu_aqi_to_us_scale, _http_get_json, _water_level_proxy,
 )
 
 # Feature order used everywhere in this module.
@@ -78,12 +80,11 @@ _HUMAN = {
 ARCHIVE_WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
 ARCHIVE_AIR_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
-# Representative Greater London coordinate (the CENTRAL-LDN node) and the
-# environment used to derive the precipitation->water-level proxy, matching the
-# live API adapter's documented design decision.
+# Representative Greater London coordinate (the CENTRAL-LDN node). Every
+# archive hour is represented once per environment, using the serving proxy.
 ARCHIVE_LAT = 51.5070
 ARCHIVE_LON = -0.1280
-_ARCHIVE_ENV = "urban"
+_ARCHIVE_CACHE_SCHEMA = 2
 
 # Archive has a few days' processing lag; step back so the window is complete.
 _ARCHIVE_LAG_DAYS = 5
@@ -92,7 +93,7 @@ _ARCHIVE_DEFAULT_DAYS = 30
 # back to synthetic rather than fitting on a near-empty matrix.
 _MIN_ARCHIVE_ROWS = 100
 
-ARCHIVE_WEATHER_HOURLY = ("temperature_2m,relative_humidity_2m,surface_pressure,"
+ARCHIVE_WEATHER_HOURLY = ("temperature_2m,relative_humidity_2m,pressure_msl,"
                          "wind_speed_10m,precipitation")
 
 _ARCHIVE_MODES = ("historical", "archive", "auto")
@@ -138,10 +139,12 @@ def _load_archive_cache(path: Path) -> np.ndarray | None:
         if not path.exists():
             return None
         payload = json.loads(path.read_text())
+        if payload.get("schema") != _ARCHIVE_CACHE_SCHEMA:
+            return None
         matrix = np.asarray(payload.get("matrix", []), dtype=float)
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         return None
-    if matrix.ndim != 2 or matrix.shape[1] != len(FEATURES) or matrix.shape[0] < _MIN_ARCHIVE_ROWS:
+    if matrix.ndim != 2 or matrix.shape[1] != len(FEATURES) or matrix.shape[0] < _MIN_ARCHIVE_ROWS * len(ENVIRONMENTS):
         return None
     return matrix
 
@@ -152,6 +155,7 @@ def _save_archive_cache(path: Path, matrix: np.ndarray, meta: dict) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({
             **meta,
+            "schema": _ARCHIVE_CACHE_SCHEMA,
             "features": list(FEATURES),
             "n_rows": int(matrix.shape[0]),
             "matrix": matrix.tolist(),
@@ -163,35 +167,47 @@ def _save_archive_cache(path: Path, matrix: np.ndarray, meta: dict) -> None:
 def _rows_from_archive(weather: dict, air: dict) -> np.ndarray:
     """Map Open-Meteo archive hourly arrays into the FEATURES matrix.
 
-    Real measured channels: temperature, humidity, surface pressure, wind speed.
+    Real measured channels: temperature, humidity, sea-level pressure, wind speed.
     Air quality comes from the air-quality archive (european_aqi -> 0-500 scale).
     Water level has no archive equivalent, so it reuses the same precipitation
-    proxy as the live API adapter — documented, not presented as a gauge reading.
+    proxy as serving: rain accumulated since local midnight, with one row per
+    environment baseline/sensitivity. UTC timestamps are grouped by London day.
     """
     wh = (weather or {}).get("hourly", {}) or {}
     ah = (air or {}).get("hourly", {}) or {}
     temps = wh.get("temperature_2m") or []
     hums = wh.get("relative_humidity_2m") or []
-    press = wh.get("surface_pressure") or []
+    press = wh.get("pressure_msl") or []
     winds = wh.get("wind_speed_10m") or []
     precs = wh.get("precipitation") or []
     aqis = ah.get("european_aqi") or []
 
-    n = min(len(temps), len(hums), len(press), len(winds))
-    base_w = _BASE_WATER[_ARCHIVE_ENV]
-    sens = _PRECIP_SENSITIVITY[_ARCHIVE_ENV]
+    times = wh.get("time") or []
+    n = min(len(times), len(temps), len(hums), len(press), len(winds))
+    source_zone = ZoneInfo((weather or {}).get("timezone", "UTC"))
+    local_zone = ZoneInfo("Europe/London")
+    day, running_rain = None, 0.0
 
     rows = []
     for i in range(n):
+        instant = datetime.fromisoformat(times[i])
+        if instant.tzinfo is None:
+            instant = instant.replace(tzinfo=source_zone)
+        local_day = instant.astimezone(local_zone).date()
+        if local_day != day:
+            day, running_rain = local_day, 0.0
+        precip = precs[i] if i < len(precs) and precs[i] is not None else 0.0
+        running_rain += float(precip)
         t, h, p, w = temps[i], hums[i], press[i], winds[i]
         if t is None or h is None or p is None or w is None:
             continue
-        precip = precs[i] if i < len(precs) and precs[i] is not None else 0.0
         aqi_raw = aqis[i] if i < len(aqis) else None
-        rows.append([
-            float(t), float(h), _eu_aqi_to_us_scale(aqi_raw),
-            base_w + sens * float(precip), float(w), float(p),
-        ])
+        for env in ENVIRONMENTS:
+            rows.append([
+                float(t), float(h), _eu_aqi_to_us_scale(aqi_raw),
+                _water_level_proxy(env, running_rain),
+                float(w), float(p),
+            ])
     if not rows:
         return np.empty((0, len(FEATURES)), dtype=float)
     return np.asarray(rows, dtype=float)
@@ -220,7 +236,7 @@ def fetch_archive_training_data(
     common = {
         "latitude": latitude, "longitude": longitude,
         "start_date": start.isoformat(), "end_date": end.isoformat(),
-        "timezone": "UTC",
+        "timezone": "Europe/London",
     }
     weather = _http_get_json(ARCHIVE_WEATHER_URL, {
         **common,
@@ -231,11 +247,14 @@ def fetch_archive_training_data(
         **common, "hourly": "european_aqi",
     }, timeout)
 
-    matrix = _rows_from_archive(weather, air)
-    if matrix.shape[0] < _MIN_ARCHIVE_ROWS:
+    try:
+        matrix = _rows_from_archive(weather, air)
+    except (TypeError, ValueError, KeyError, AttributeError) as exc:
+        raise ApiUnavailable(f"malformed archive response: {exc}") from exc
+    if matrix.shape[0] < _MIN_ARCHIVE_ROWS * len(ENVIRONMENTS):
         raise ApiUnavailable(
             f"archive returned only {matrix.shape[0]} usable rows "
-            f"(need >= {_MIN_ARCHIVE_ROWS})")
+            f"(need >= {_MIN_ARCHIVE_ROWS * len(ENVIRONMENTS)} environment-hour rows)")
     _save_archive_cache(path, matrix, {
         "latitude": latitude, "longitude": longitude,
         "start_date": start.isoformat(), "end_date": end.isoformat(),
@@ -275,7 +294,8 @@ class AnomalyDetector:
                 matrix = fetch_archive_training_data()
                 self.training_mode = "historical"
                 self.training_window = (
-                    f"Greater London {matrix.shape[0]}h Open-Meteo ERA5 archive (~{_ARCHIVE_DEFAULT_DAYS}d)")
+                    f"Greater London {matrix.shape[0]} environment-hour rows, "
+                    f"Open-Meteo ERA5 archive (~{_ARCHIVE_DEFAULT_DAYS}d)")
             except ApiUnavailable as e:
                 self.fallback_reason = str(e)
                 matrix = None
@@ -292,7 +312,7 @@ class AnomalyDetector:
     def train_archive(self, weather: dict, air: dict) -> "AnomalyDetector":
         """Fit recorded raw archive arrays offline using the historical path."""
         matrix = _rows_from_archive(weather, air)
-        if matrix.shape[0] < _MIN_ARCHIVE_ROWS:
+        if matrix.shape[0] < _MIN_ARCHIVE_ROWS * len(ENVIRONMENTS):
             raise ValueError("recorded archive has too few usable training rows")
         self.training_mode = "historical"
         self.training_window = (f"{weather['hourly']['time'][0]} .. "

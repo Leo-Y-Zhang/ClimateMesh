@@ -27,7 +27,7 @@ judgement about individual nodes.
 
 Three configurations are compared on identical frames:
 
-    sub-scores      the six hazard sub-scores alone -- the "just thresholds"
+    sub-scores      four hazard sub-scores plus supporting humidity/pressure -- the "just thresholds"
                     baseline any reviewer would ask about
     + AI            sub-scores multiplied by the Isolation Forest's verdict
     + AI + mesh     the shipped system, including the corroboration rule that

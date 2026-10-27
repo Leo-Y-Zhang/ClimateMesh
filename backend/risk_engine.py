@@ -1,8 +1,9 @@
 """Explainable risk engine for Climate Mesh.
 
-For each node it computes six 0-100 hazard sub-scores (temperature, humidity,
-air quality, water level, wind, pressure), combines them (worst hazard + 20% of
-the rest) into a 0-100 base score, then amplifies that by an AI anomaly multiplier and a mesh-correlation
+For each node it computes four hazard sub-scores (temperature, air quality,
+water level, wind) and supporting humidity and pressure sub-scores. The worst
+hazard plus 20% of the remaining terms (including humidity and pressure) forms the 0-100
+base score, then applies an AI anomaly multiplier and a mesh-correlation
 multiplier. A single isolated spike is treated with caution; the same anomaly
 confirmed across adjacent nodes escalates the risk — that is the core mesh
 idea. Every result carries its top contributing factors and a plain-English
@@ -160,11 +161,11 @@ def risk_level(score: float) -> str:
 # Map each sub-score to a human label and the dominant hazard it implies.
 _FACTOR_LABELS = {
     "water_sub": ("water level", "flood"),
-    "humidity_sub": ("humidity", "flood"),
+    "humidity_sub": ("humidity", "risk"),
     "aqi_sub": ("air quality", "smog"),
     "temp_sub": ("temperature", "heatwave"),
     "wind_sub": ("wind speed", "storm"),
-    "pressure_sub": ("pressure drop", "storm"),
+    "pressure_sub": ("pressure drop", "risk"),
 }
 
 # Hazards an alert can be filed under (each has a headline and a playbook).
@@ -173,14 +174,11 @@ HAZARDS = ("flood", "smog", "heatwave", "storm", "cold")
 
 def _hazard_for(sub_key: str, reading: dict) -> str:
     """Dominant hazard for the top sub-score, taking the *direction* into
-    account: temperature and humidity are two-sided scales, so a frosty
-    morning is a cold hazard (not a 'heatwave') and very dry air is not a
-    flood signal."""
+    account: a frosty morning is a cold hazard, not a heatwave. Humidity
+    supports the score but never selects a hazard."""
     hazard = _FACTOR_LABELS[sub_key][1]
     if sub_key == "temp_sub" and float(reading.get("temperature", 15.0)) < 24:
         return "cold"
-    if sub_key == "humidity_sub" and float(reading.get("humidity", 60.0)) < 85:
-        return "risk"
     return hazard
 
 
@@ -199,18 +197,19 @@ def calculate_base(reading: dict, detector: AnomalyDetector, ai: dict | None = N
         "wind_sub": _wind_sub(reading["wind_speed"]),
         "pressure_sub": _pressure_sub(reading["barometric_pressure"]),
     }
-    # Combine: the worst single hazard drives the score, with a fractional
-    # contribution from the others so co-occurring hazards escalate further.
+    # Humidity and pressure support genuine hazards through the secondary term only.
+    # It cannot select the worst hazard, its label, or its factor ordering.
     vals = list(subs.values())
-    worst = max(vals)
+    hazards = {k: v for k, v in subs.items() if k not in ("humidity_sub", "pressure_sub")}
+    worst = max(hazards.values())
     base_score = min(100.0, worst + 0.20 * (sum(vals) - worst))
 
     if ai is None:
         ai = detector.predict(reading)
     ai_multiplier = 1.0 + ai["score"] * 0.5 if ai["is_anomaly"] else 1.0
 
-    # Top contributing factors, in order of contribution.
-    ranked = sorted(subs.items(), key=lambda kv: kv[1], reverse=True)
+    # Rank hazards only; explanations show humidity and pressure as support.
+    ranked = sorted(hazards.items(), key=lambda kv: kv[1], reverse=True)
     top_factors = [_FACTOR_LABELS[k][0] for k, v in ranked if v >= 15.0][:3]
     dominant_hazard = _hazard_for(ranked[0][0], reading) if ranked[0][1] >= 15.0 else "risk"
 
@@ -282,9 +281,13 @@ def _explanation(reading: dict, base: dict, score: float,
     hazard = base["dominant_hazard"]
     factors = (", ".join(_contributor_phrase(f, reading) for f in base["top_factors"])
                if base["top_factors"] else "multiple factors")
+    support = (f" Supporting factor: {_contributor_phrase('humidity', reading)}."
+               if base["humidity_sub"] > 0 else "")
+    if base["pressure_sub"] > 0:
+        support += f" Supporting factor: {_contributor_phrase('pressure drop', reading)}."
     level = risk_level(score)
     if level == SAFE:
-        return f"{name}: conditions normal. Risk score {math.floor(score)}/100."
+        return f"{name}: conditions normal. Risk score {math.floor(score)}/100.{support}"
     headline = {
         "flood": "Flood risk rising",
         "smog": "Air-quality risk rising",
@@ -299,7 +302,7 @@ def _explanation(reading: dict, base: dict, score: float,
         return (f"Check the sensor at {name}: it reports "
                 f"{factors}, but none of its {mesh_degree} neighbours within "
                 f"6 km sees the same thing. Treat as a possible sensor fault "
-                f"and verify before acting. Risk score {math.floor(score)}/100.")
+                f"and verify before acting. Risk score {math.floor(score)}/100.{support}")
     mesh_clause = {
         CORROBORATED: f" Same trend seen across {correlated_count} nearby nodes.",
         PARTIAL: f" {correlated_count} of {mesh_degree} nearby nodes see the same trend.",
@@ -313,7 +316,7 @@ def _explanation(reading: dict, base: dict, score: float,
                       "not enough to corroborate this reading."),
     }.get(corroboration, " Currently an isolated reading.")
     return (f"{headline} near {name}.{mesh_clause} "
-            f"Risk score {math.floor(score)}/100. Main contributors: {factors}.")
+            f"Risk score {math.floor(score)}/100. Main contributors: {factors}.{support}")
 
 
 def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
@@ -369,6 +372,7 @@ def compute_all(readings: list[dict], detector: AnomalyDetector) -> list[dict]:
             "wind_sub": base["wind_sub"],
             "pressure_sub": base["pressure_sub"],
             "anomaly_score": base["anomaly_score"],
+            "is_anomaly": base["is_anomaly"],
             "ai_multiplier": base["ai_multiplier"],
             "mesh_multiplier": mesh_multiplier,
             "correlated": correlated,

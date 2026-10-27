@@ -1,0 +1,45 @@
+flood-2021-07-12-grid
+  as_found: 311 alert-hours, 50 node episodes, 4 London episodes; AI {'flagged': 452, 'total': 480, 'share': 0.9416666666666667}; quiet AI {'flagged': 92, 'total': 120, 'share': 0.7666666666666667}
+  round_1: 36 alert-hours, 12 node episodes, 5 London episodes; AI {'flagged': 66, 'total': 480, 'share': 0.1375}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+  calibrated: 36 alert-hours, 12 node episodes, 5 London episodes; AI {'flagged': 66, 'total': 480, 'share': 0.1375}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+flood-2021-07-12-gauges
+  as_found: 310 alert-hours, 48 node episodes, 4 London episodes; AI {'flagged': 440, 'total': 480, 'share': 0.9166666666666666}; quiet AI {'flagged': 88, 'total': 120, 'share': 0.7333333333333333}
+  round_1: 44 alert-hours, 13 node episodes, 3 London episodes; AI {'flagged': 74, 'total': 480, 'share': 0.15416666666666667}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+  calibrated: 44 alert-hours, 13 node episodes, 3 London episodes; AI {'flagged': 74, 'total': 480, 'share': 0.15416666666666667}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+heat-2022-07-19-grid
+  as_found: 546 alert-hours, 115 node episodes, 8 London episodes; AI {'flagged': 797, 'total': 960, 'share': 0.8302083333333333}; quiet AI {'flagged': 72, 'total': 120, 'share': 0.6}
+  round_1: 491 alert-hours, 103 node episodes, 8 London episodes; AI {'flagged': 583, 'total': 960, 'share': 0.6072916666666667}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+  calibrated: 491 alert-hours, 103 node episodes, 8 London episodes; AI {'flagged': 583, 'total': 960, 'share': 0.6072916666666667}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+storm-2022-02-18-grid
+  as_found: 244 alert-hours, 31 node episodes, 2 London episodes; AI {'flagged': 436, 'total': 480, 'share': 0.9083333333333333}; quiet AI {'flagged': 76, 'total': 120, 'share': 0.6333333333333333}
+  round_1: 220 alert-hours, 21 node episodes, 1 London episodes; AI {'flagged': 273, 'total': 480, 'share': 0.56875}; quiet AI {'flagged': 2, 'total': 120, 'share': 0.016666666666666666}
+  calibrated: 129 alert-hours, 21 node episodes, 2 London episodes; AI {'flagged': 273, 'total': 480, 'share': 0.56875}; quiet AI {'flagged': 2, 'total': 120, 'share': 0.016666666666666666}
+holdout-2023-03-06-grid
+  as_found: 2489 alert-hours, 422 node episodes, 29 London episodes; AI {'flagged': 3128, 'total': 3360, 'share': 0.930952380952381}; quiet AI {'flagged': 83, 'total': 120, 'share': 0.6916666666666667}
+  round_1: 1968 alert-hours, 282 node episodes, 19 London episodes; AI {'flagged': 1556, 'total': 3360, 'share': 0.4630952380952381}; quiet AI {'flagged': 36, 'total': 120, 'share': 0.3}
+  calibrated: 1715 alert-hours, 331 node episodes, 21 London episodes; AI {'flagged': 1556, 'total': 3360, 'share': 0.4630952380952381}; quiet AI {'flagged': 36, 'total': 120, 'share': 0.3}
+holdout-2023-06-05-grid
+  as_found: 678 alert-hours, 142 node episodes, 8 London episodes; AI {'flagged': 2370, 'total': 3360, 'share': 0.7053571428571429}; quiet AI {'flagged': 72, 'total': 120, 'share': 0.6}
+  round_1: 524 alert-hours, 81 node episodes, 5 London episodes; AI {'flagged': 999, 'total': 3360, 'share': 0.29732142857142857}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+  calibrated: 524 alert-hours, 81 node episodes, 5 London episodes; AI {'flagged': 999, 'total': 3360, 'share': 0.29732142857142857}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+holdout-2023-09-04-grid
+  as_found: 2242 alert-hours, 417 node episodes, 19 London episodes; AI {'flagged': 2638, 'total': 3360, 'share': 0.7851190476190476}; quiet AI {'flagged': 85, 'total': 120, 'share': 0.7083333333333334}
+  round_1: 1428 alert-hours, 294 node episodes, 10 London episodes; AI {'flagged': 1445, 'total': 3360, 'share': 0.43005952380952384}; quiet AI {'flagged': 24, 'total': 120, 'share': 0.2}
+  calibrated: 1428 alert-hours, 294 node episodes, 10 London episodes; AI {'flagged': 1445, 'total': 3360, 'share': 0.43005952380952384}; quiet AI {'flagged': 24, 'total': 120, 'share': 0.2}
+holdout-2023-12-04-grid
+  as_found: 2282 alert-hours, 324 node episodes, 18 London episodes; AI {'flagged': 2689, 'total': 3360, 'share': 0.8002976190476191}; quiet AI {'flagged': 112, 'total': 120, 'share': 0.9333333333333333}
+  round_1: 761 alert-hours, 159 node episodes, 14 London episodes; AI {'flagged': 287, 'total': 3360, 'share': 0.08541666666666667}; quiet AI {'flagged': 12, 'total': 120, 'share': 0.1}
+  calibrated: 518 alert-hours, 110 node episodes, 10 London episodes; AI {'flagged': 287, 'total': 3360, 'share': 0.08541666666666667}; quiet AI {'flagged': 12, 'total': 120, 'share': 0.1}
+holdout-2024-03-04-grid
+  as_found: 2123 alert-hours, 366 node episodes, 21 London episodes; AI {'flagged': 2379, 'total': 3360, 'share': 0.7080357142857143}; quiet AI {'flagged': 74, 'total': 120, 'share': 0.6166666666666667}
+  calibrated: 1070 alert-hours, 211 node episodes, 15 London episodes; AI {'flagged': 96, 'total': 3360, 'share': 0.02857142857142857}; quiet AI {'flagged': 1, 'total': 120, 'share': 0.008333333333333333}
+holdout-2024-06-03-grid
+  as_found: 371 alert-hours, 107 node episodes, 10 London episodes; AI {'flagged': 2239, 'total': 3360, 'share': 0.6663690476190476}; quiet AI {'flagged': 72, 'total': 120, 'share': 0.6}
+  calibrated: 41 alert-hours, 15 node episodes, 1 London episodes; AI {'flagged': 7, 'total': 3360, 'share': 0.0020833333333333333}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+holdout-2024-09-02-grid
+  as_found: 1604 alert-hours, 272 node episodes, 16 London episodes; AI {'flagged': 2956, 'total': 3360, 'share': 0.8797619047619047}; quiet AI {'flagged': 72, 'total': 120, 'share': 0.6}
+  calibrated: 501 alert-hours, 110 node episodes, 9 London episodes; AI {'flagged': 727, 'total': 3360, 'share': 0.21636904761904763}; quiet AI {'flagged': 5, 'total': 120, 'share': 0.041666666666666664}
+holdout-2024-12-02-grid
+  as_found: 1461 alert-hours, 199 node episodes, 10 London episodes; AI {'flagged': 2501, 'total': 3360, 'share': 0.7443452380952381}; quiet AI {'flagged': 72, 'total': 120, 'share': 0.6}
+  calibrated: 380 alert-hours, 48 node episodes, 4 London episodes; AI {'flagged': 394, 'total': 3360, 'share': 0.11726190476190476}; quiet AI {'flagged': 0, 'total': 120, 'share': 0.0}
+Listed 24108 held-out alerts with readings and episode IDs

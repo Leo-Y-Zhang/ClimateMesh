@@ -1,0 +1,26 @@
+flood-2021-07-12-grid
+  as_found: quiet alerts 119, AI flags 92/120; all alerts {'flood': 306, 'sensor-check': 5}; classes {'hazard-alone': 33, 'multiplier-dependent': 278}
+  calibrated: quiet alerts 0, AI flags 0/120; all alerts {'flood': 4, 'sensor-check': 32}; classes {'hazard-alone': 32, 'multiplier-dependent': 4}
+flood-2021-07-12-gauges
+  as_found: quiet alerts 117, AI flags 88/120; all alerts {'flood': 306, 'sensor-check': 4}; classes {'hazard-alone': 39, 'multiplier-dependent': 271}
+  calibrated: quiet alerts 0, AI flags 0/120; all alerts {'flood': 20, 'sensor-check': 24}; classes {'hazard-alone': 38, 'multiplier-dependent': 6}
+heat-2022-07-19-grid
+  as_found: quiet alerts 0, AI flags 72/120; all alerts {'heatwave': 399, 'sensor-check': 5, 'smog': 142}; classes {'hazard-alone': 253, 'multiplier-dependent': 293}
+  calibrated: quiet alerts 0, AI flags 0/120; all alerts {'heatwave': 396, 'sensor-check': 4, 'smog': 91}; classes {'hazard-alone': 253, 'multiplier-dependent': 238}
+storm-2022-02-18-grid
+  as_found: quiet alerts 23, AI flags 76/120; all alerts {'flood': 12, 'storm': 232}; classes {'hazard-alone': 60, 'multiplier-dependent': 184}
+  calibrated: quiet alerts 2, AI flags 2/120; all alerts {'storm': 220}; classes {'hazard-alone': 60, 'multiplier-dependent': 160}
+holdout-2023-03-06-grid
+  as_found: quiet alerts 120, AI flags 83/120; all alerts {'cold': 320, 'flood': 1437, 'sensor-check': 20, 'smog': 226, 'storm': 486}; classes {'hazard-alone': 395, 'multiplier-dependent': 2094}
+  calibrated: quiet alerts 120, AI flags 36/120; all alerts {'cold': 513, 'sensor-check': 13, 'smog': 274, 'storm': 1168}; classes {'hazard-alone': 400, 'multiplier-dependent': 1568}
+holdout-2023-06-05-grid
+  as_found: quiet alerts 63, AI flags 72/120; all alerts {'flood': 173, 'smog': 505}; classes {'hazard-alone': 177, 'multiplier-dependent': 501}
+  calibrated: quiet alerts 0, AI flags 0/120; all alerts {'smog': 524}; classes {'hazard-alone': 177, 'multiplier-dependent': 347}
+holdout-2023-09-04-grid
+  as_found: quiet alerts 117, AI flags 85/120; all alerts {'flood': 793, 'heatwave': 60, 'sensor-check': 1, 'smog': 1388}; classes {'hazard-alone': 150, 'multiplier-dependent': 2092}
+  calibrated: quiet alerts 31, AI flags 24/120; all alerts {'heatwave': 58, 'smog': 1370}; classes {'hazard-alone': 150, 'multiplier-dependent': 1278}
+holdout-2023-12-04-grid
+  as_found: quiet alerts 67, AI flags 112/120; all alerts {'flood': 1898, 'sensor-check': 1, 'smog': 104, 'storm': 279}; classes {'hazard-alone': 0, 'multiplier-dependent': 2282}
+  calibrated: quiet alerts 1, AI flags 12/120; all alerts {'cold': 77, 'sensor-check': 3, 'smog': 345, 'storm': 336}; classes {'hazard-alone': 0, 'multiplier-dependent': 761}
+Listed 12372 held-out alerts with readings in evidence/replay/held-out-alerts.csv
+Requested zero multiplier-dependent alert target: NOT MET; residual counts {'flood-2021-07-12-grid': 0, 'flood-2021-07-12-gauges': 0, 'heat-2022-07-19-grid': 0, 'storm-2022-02-18-grid': 2, 'holdout-2023-03-06-grid': 1568, 'holdout-2023-06-05-grid': 347, 'holdout-2023-09-04-grid': 1278, 'holdout-2023-12-04-grid': 761}

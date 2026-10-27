@@ -15,6 +15,7 @@ from scripts.fetch_history import EVENTS, fetch_event, without_retrieved
 from sensors.api_adapter import ApiUnavailable, _BASE_WATER, _PRECIP_SENSITIVITY
 from sensors.base import validate_reading
 from sensors.history_adapter import HistoryAdapter
+from simulation.replay_io import read_json
 from simulation.replay import ROOT, local_gauge_hours, replay, select_gauges, write_replay
 
 
@@ -26,7 +27,7 @@ def fixture(event):
 def test_fixture_integrity(event):
     data = fixture(event)
     assert set(data["nodes"]) == set(NODES_BY_ID)
-    assert len(data["hours"]) == (48 if event.startswith("heat") else 24)
+    assert len(data["hours"]) == (168 if event.startswith("holdout") else 48 if event.startswith("heat") else 24)
     for arrays in data["nodes"].values():
         assert all(len(a) == len(data["hours"]) for a in arrays.values())
     for kind in ("grid", "air", "training"):
@@ -94,7 +95,7 @@ def test_replay_offline_and_byte_identical(monkeypatch, tmp_path, event, variant
     assert one["training"]["training_mode"] == "historical"
     assert one["training"]["n_train"] >= 700
     committed = ROOT / "evidence" / "replay" / path.name
-    assert json.loads(committed.read_text()) == one
+    assert read_json(committed) == one
 
 
 def test_gauge_selection_and_utc_to_bst():

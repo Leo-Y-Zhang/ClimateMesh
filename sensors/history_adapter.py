@@ -1,13 +1,12 @@
 """Canonical readings from recorded hourly arrays; no network or scenario deltas."""
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from config.nodes import NODES
-from sensors.api_adapter import _BASE_WATER, _PRECIP_SENSITIVITY, _eu_aqi_to_us_scale
+from simulation.replay_io import read_json
+from sensors.api_adapter import _eu_aqi_to_us_scale, _water_level_proxy
 from sensors.base import SensorAdapter, make_reading
 from simulation.engine import _heat_index, _wind_chill
 
@@ -16,7 +15,7 @@ class HistoryAdapter(SensorAdapter):
     source = "archive"
 
     def __init__(self, fixture_path, rain_override=None):
-        self.fixture = json.loads(Path(fixture_path).read_text())
+        self.fixture = read_json(fixture_path)
         self.rain_override = rain_override or {}
         for node_id, values in self.rain_override.items():
             if node_id not in self.fixture["nodes"] or len(values) != len(self.fixture["hours"]):
@@ -49,7 +48,7 @@ class HistoryAdapter(SensorAdapter):
                 node, temperature=temp, humidity=humidity,
                 wind_speed=wind, barometric_pressure=data["pressure_msl"][i],
                 wind_chill=wind_chill, heat_index=heat_index,
-                water_level=_BASE_WATER[env] + _PRECIP_SENSITIVITY[env] * total,
+                water_level=_water_level_proxy(env, total),
                 air_quality=_eu_aqi_to_us_scale(data["european_aqi"][i]),
                 source=self.source, quality_flag="estimated", scenario="none", timestamp=timestamp,
             ))

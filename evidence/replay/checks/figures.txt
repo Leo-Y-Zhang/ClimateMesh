@@ -1,0 +1,6 @@
+Wrote evidence/replay/figures/heat-2022-07-19.png
+Wrote evidence/replay/figures/storm-2022-02-18.png
+Wrote evidence/replay/figures/flood-2021-07-12-all-gauges.png
+Wrote evidence/replay/figures/flood-2021-07-12-hero.png
+Wrote evidence/replay/figures/flood-2021-07-12-gauge-map.png
+Wrote evidence/replay/figures/calibration-before-after.png

@@ -1,0 +1,38 @@
+============================================================================
+  Climate Mesh — does each layer earn its place?
+============================================================================
+
+  Quiet frames (30 frames, no event injected)
+  --------------------------------------------------------------
+  configuration     false alarms      rate
+  sub-scores             0 / 30       0.0%
+  + AI                   0 / 30       0.0%
+  + AI + mesh            0 / 30       0.0%
+
+  One stuck water sensor (9 m) in an otherwise calm mesh (90 frames)
+  --------------------------------------------------------------
+  configuration     false flood alerts      rate
+  sub-scores                  90 / 90     100.0%
+  + AI                        90 / 90     100.0%
+  + AI + mesh                  0 / 90       0.0%
+
+  Detection rate by event intensity (30 frames per scenario per step, 4 scenarios)
+  --------------------------------------------------------------
+  intensity         sub-scores            + AI     + AI + mesh
+       0.10              0.0%            0.0%            0.0% 
+       0.20              0.0%            0.0%            0.0% 
+       0.30              0.0%            0.0%            0.0% 
+       0.40              2.5%            8.3%           25.0% 
+       0.50             50.0%           50.8%           35.0% 
+       0.60             50.8%           75.0%           50.0% 
+       0.70             75.0%           77.5%           50.8% 
+       0.80             99.2%          100.0%           75.0% 
+       0.90            100.0%          100.0%           75.0% 
+       1.00            100.0%          100.0%          100.0% 
+
+  Intensity at which each configuration first reaches 90 % detection
+  --------------------------------------------------------------
+  sub-scores              0.80
+  + AI                    0.80
+  + AI + mesh             1.00
+============================================================================

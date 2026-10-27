@@ -10,8 +10,8 @@ works. It runs, in order:
 
 The two demo cycles run in judge mode (simulation clock frozen at the start of
 the event) so they show exactly the same deterministic frame as
-scripts/demo_tour.py and the README: normal avg 3.9 / 0 alerts, flood avg 50.8
-/ 10 alerts.
+scripts/demo_tour.py and the README: normal avg 3.9 / 0 alerts, flood avg 43.0
+/ 4 alerts.
   5. evidence export        (scripts/export_evidence.py)
 
 then prints a compact PASS/FAIL summary table that is easy to screenshot. The

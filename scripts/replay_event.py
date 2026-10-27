@@ -25,6 +25,9 @@ def main():
         s = payload["summary"]
         print(f"{event} / {variant}: peak {s['peak_score']}; alerts {s['alerts_by_type']}; "
               f"damped nodes {s['damped_nodes']}")
+        print(f"  Episodes: {s['node_episodes']} per-node, {s['london_episodes']} London-wide; "
+              f"AI firing {s['ai_firing']['flagged']}/{s['ai_firing']['total']} "
+              f"({s['ai_firing']['share']:.2%}); quiet {s['quiet_ai_firing']['share']:.2%}")
         q = s["quiet_hours"]
         print(f"  First 6 hours: peak {q['peak_score']}, AI amplified {q['ai_amplified_node_hours']} "
               f"node-hours, alerts {q['alerts_by_type']}. Wrote {path}")

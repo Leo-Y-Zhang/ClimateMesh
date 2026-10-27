@@ -1,0 +1,1 @@
+PASS: 12 replay outputs byte-identical in both runs (PYTHONHASHSEED=1 and 987654) and final evidence; scoring/feature hashes still match the pre-2024 lock.

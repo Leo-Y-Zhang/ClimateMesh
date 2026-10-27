@@ -7,7 +7,6 @@ The private in-memory database never touches the live database.
 """
 from __future__ import annotations
 
-import json
 import sqlite3
 from collections import Counter
 from datetime import datetime, timezone
@@ -20,9 +19,11 @@ from backend import risk_engine
 from config.nodes import NODES, haversine_km
 from data import database
 from sensors.history_adapter import HistoryAdapter
+from scripts.fetch_history import EVENTS
+from simulation.replay_io import alert_metrics, read_json, write_json
 
 ROOT = Path(__file__).resolve().parent.parent
-EVENT_IDS = ("flood-2021-07-12", "heat-2022-07-19", "storm-2022-02-18")
+EVENT_IDS = tuple(EVENTS)
 
 
 def local_gauge_hours(gauge, hours):
@@ -96,7 +97,7 @@ def replay(event_id, variant="grid"):
     if variant not in ("grid", "gauges") or (variant == "gauges" and not event_id.startswith("flood")):
         raise ValueError("gauges variant is available only for the flood event")
     path = ROOT / "data" / "history" / f"{event_id}.json"
-    fixture = json.loads(path.read_text())
+    fixture = read_json(path)
     overrides, gauge_reports = select_gauges(fixture)
     adapter = HistoryAdapter(path, overrides if variant == "gauges" else None)
     training = fixture["training"]
@@ -172,11 +173,10 @@ def replay(event_id, variant="grid"):
             "gauge_policy": "All Good, within 3.0 km; closest qualifying gauge wins per node. "
                             "UTC-day request omits first BST hour: empty buckets sum to zero, not measured dryness. "
                             "See readings_per_hour and outside_window_mm.",
-            "summary": summary, "per_hour": per_hour}
+            "summary": {**summary, **alert_metrics(per_hour)}, "per_hour": per_hour}
 
 
 def write_replay(payload, out):
-    path = Path(out) / f"{payload['event_id']}-{payload['variant']}.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n")
-    return path
+    suffix = ".json.gz" if payload['event_id'].startswith('holdout') else ".json"
+    path = Path(out) / f"{payload['event_id']}-{payload['variant']}{suffix}"
+    return write_json(payload, path)
