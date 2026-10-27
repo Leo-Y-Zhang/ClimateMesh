@@ -35,6 +35,7 @@ from dashboard.street_helpers import (
     select_node,
     site_position,
     sparkline_svg,
+    SUPPORTING_LABELS,
     subscore_bars,
 )
 from data.database import DB_PATH, get_latest_readings_per_node, get_risk_scores, init_db
@@ -113,6 +114,9 @@ html, body {margin:0;overflow-x:hidden}
 .driver {display:grid;grid-template-columns:minmax(105px,auto) minmax(20px,1fr) 2.4em;
  gap:.6em;align-items:center;font-size:calc(clamp(16px,2.1vh,26px)*var(--scale));line-height:1.15}
 .driver.top {font-weight:800}
+.driver.supporting {opacity:.7}
+.driver-sep {font-size:.72em;font-weight:700;letter-spacing:.08em;
+ text-transform:uppercase;opacity:.7;margin-top:.35em}
 .driver.top .driver-label {text-decoration:underline;text-underline-offset:.18em}
 .driver-value {text-align:right}
 .driver-track {height:.4em;border-radius:3px;background:var(--track);overflow:hidden}
@@ -250,11 +254,17 @@ def band_scale_html(score: float, colours: dict[str, str]) -> str:
 
 def drivers_html(row: dict) -> str:
     bars = []
+    separated = False
     for i, (label, value) in enumerate(subscore_bars(row)):
         top = " top" if i == 0 and value is not None and value > 0 else ""
+        supporting = label in SUPPORTING_LABELS
+        if supporting and not separated:
+            bars.append('<div class="driver-sep">Supporting signals</div>')
+            separated = True
         displayed = f"{value:g}" if value is not None else "—"
         bars.append(
-            f'<div class="driver{top}"><span class="driver-label">{label}</span>'
+            f'<div class="driver{top}{" supporting" if supporting else ""}">'
+            f'<span class="driver-label">{label}</span>'
             '<span class="driver-track" aria-hidden="true">'
             f'<span class="driver-fill" style="width:{value or 0}%"></span></span>'
             f'<span class="driver-value">{displayed}</span></div>'

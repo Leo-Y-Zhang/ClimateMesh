@@ -128,18 +128,24 @@ def _number(value, default: float = 0.0) -> float:
         return default
 
 
+HAZARD_FACTORS = (("water_sub", "Water"), ("wind_sub", "Wind"),
+                  ("temp_sub", "Temperature"), ("aqi_sub", "Air quality"))
+# The risk engine lets these add to a score but never select the hazard, so
+# the display lists them after the hazard drivers, never as the top driver.
+SUPPORTING_FACTORS = (("pressure_sub", "Pressure"), ("humidity_sub", "Humidity"))
+SUPPORTING_LABELS = frozenset(label for _key, label in SUPPORTING_FACTORS)
+
+
 def subscore_bars(row: dict) -> list[tuple[str, float | None]]:
-    """Stored severities in descending order; NULL is unavailable, not zero."""
-    factors = (
-        ("water_sub", "Water"), ("wind_sub", "Wind"),
-        ("pressure_sub", "Pressure"), ("temp_sub", "Temperature"),
-        ("aqi_sub", "Air quality"), ("humidity_sub", "Humidity"),
-    )
-    bars = []
-    for key, label in factors:
-        value = _number(row.get(key), -1)
-        bars.append((label, min(100.0, value) if value >= 0 else None))
-    return sorted(bars, key=lambda bar: -(bar[1] if bar[1] is not None else -1))
+    """Hazard drivers then supporting signals, each in descending order;
+    NULL is unavailable, not zero."""
+    def ranked(factors):
+        bars = []
+        for key, label in factors:
+            value = _number(row.get(key), -1)
+            bars.append((label, min(100.0, value) if value >= 0 else None))
+        return sorted(bars, key=lambda bar: -(bar[1] if bar[1] is not None else -1))
+    return ranked(HAZARD_FACTORS) + ranked(SUPPORTING_FACTORS)
 
 
 def multiplier_sentences(row: dict) -> tuple[str, str]:

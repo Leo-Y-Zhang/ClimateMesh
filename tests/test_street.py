@@ -175,12 +175,12 @@ def test_subscore_order_and_labels():
     }
     assert subscore_bars(row) == [
         ("Wind", 90), ("Temperature", 60), ("Water", 42),
-        ("Pressure", 35), ("Air quality", 12), ("Humidity", 0),
+        ("Air quality", 12), ("Pressure", 35), ("Humidity", 0),
     ]
     # Ties retain the documented label order, and missing channels are honest.
     assert subscore_bars({}) == [
         (label, None) for label in
-        ("Water", "Wind", "Pressure", "Temperature", "Air quality", "Humidity")
+        ("Water", "Wind", "Temperature", "Air quality", "Pressure", "Humidity")
     ]
     assert subscore_bars({"water_sub": 0, "wind_sub": None})[0] == ("Water", 0)
 
