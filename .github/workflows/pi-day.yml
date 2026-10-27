@@ -1,0 +1,33 @@
+name: Pi day
+
+# Runs the full on-device evidence script on a real 64-bit Arm Linux machine
+# (GitHub's Arm runner), the closest hardware to the Pi that CI offers. The
+# report names the machine it ran on; it is not, and never claims to be, a
+# Raspberry Pi measurement. Started by hand from the Actions tab.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pi-day:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"   # what Raspberry Pi OS Bookworm ships
+      - name: Install (prebuilt wheels only, nothing compiled)
+        run: |
+          python -m pip install --upgrade pip
+          pip install --only-binary=:all: -r requirements.txt
+      - name: Pi-day evidence (scripts/pi_day.py)
+        run: python scripts/pi_day.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi-day-report
+          path: evidence/pi-day/
+          if-no-files-found: error
