@@ -91,7 +91,7 @@ def spoken_summary(rows: list[dict]) -> str:
     Scores use the dashboard's flooring rule, so speech cannot change a band.
     """
     acting = sorted((r for r in rows if r.get("level") in ("WARNING", "CRITICAL")),
-                    key=lambda r: float(r["score"]), reverse=True)
+                    key=lambda r: (-float(r["score"]), str(r.get("node_id", ""))))
     watched = f"{len(rows)} {'place is' if len(rows) == 1 else 'places are'} being watched."
     if not acting:
         return f"Nothing needs action now. {watched}"

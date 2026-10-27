@@ -1,0 +1,32 @@
+{
+  "tests": 433,
+  "source_lines": 8396,
+  "test_files": 31,
+  "nodes": 20,
+  "channels": 8,
+  "sources": 5,
+  "replay": {
+    "events": 3,
+    "variants": 4,
+    "hours": 120,
+    "unique_hours": 96,
+    "node_hours": 2400,
+    "gauges_fetched": 34,
+    "gauges_used": 2,
+    "heldout_weeks": 8,
+    "heldout_node_hours": 26880
+  },
+  "evaluation": {
+    "quiet": 30,
+    "stuck": 90,
+    "event": 1200
+  },
+  "benchmark": {
+    "median_ms": 41.0,
+    "cycles": 5,
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+    "output": "================================================================\n  Climate Mesh benchmark\n================================================================\n  Machine             : x86_64 (Linux), 7 GB\n  Python              : 3.11.17\n  Model training      : 0.1 s (2,000 synthetic samples)\n  Full 20-node cycle  : median 41 ms over 5 cycles (read, AI scoring, risk, alerts, database)\n  Peak memory (engine): 303 MB\n----------------------------------------------------------------\n  Sentence for the write-up (section 7):\n  Measured on our x86_64 (Linux) (7 GB, Python 3.11.17): the anomaly model trains in 0.1 s and a full cycle of 20 nodes (read, AI scoring, risk, alerts, database) takes about 41 ms against a 2-second read interval; the engine peaks at about 303 MB of memory; the test suite was not run.\n================================================================\n"
+  },
+  "commit": "b220e67",
+  "generated": "2026-10-27T16:57:04+00:00"
+}

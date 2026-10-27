@@ -1,7 +1,7 @@
 """Streamlit dashboard for Climate Mesh.
 
-Seven tabs (Live Map, Network Overview, Node Detail, AI Explainability,
-Evidence & Validation, Hardware Readiness, Competition Pitch). The dashboard is
+Eight tabs (Live Map, Network Overview, Node Detail, AI Explainability,
+Evidence & Validation, Hardware Readiness, Competition Pitch, Real events). The dashboard is
 a pure *reader* of the shared SQLite database — the engine process (``run.py``)
 writes; this displays. Data-source labels and the active mode are shown
 prominently so nobody mistakes simulated or API data for physical-sensor data.
@@ -103,6 +103,13 @@ def _corroboration_line(row) -> str:
                               row.get("correlated_count"), row.get("mesh_degree"))
 
 
+def _by_risk(frame: pd.DataFrame) -> pd.DataFrame:
+    """Highest score first, ties by node id, with a stable sort, so every panel
+    that names "the worst node" names the same one (pandas' default quicksort
+    orders ties arbitrarily, which differed between x86 and Arm)."""
+    return frame.sort_values(["score", "node_id"], ascending=[False, True], kind="stable")
+
+
 def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
     """The answer to "so what do I do?", on the first screen rather than the third.
 
@@ -110,8 +117,7 @@ def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
     stored one; until now nothing in the dashboard displayed it, so a reader
     who found the red node still had nowhere to go.
     """
-    acting = merged[merged["level"].isin(ACTING_LEVELS)].sort_values(
-        "score", ascending=False)
+    acting = _by_risk(merged[merged["level"].isin(ACTING_LEVELS)])
     if acting.empty:
         st.success("**Nothing to act on.** No node is at WARNING or CRITICAL. "
                    "The map below shows the current score at every node.")
@@ -225,7 +231,7 @@ with banner:
     # From `merged`, the same frame the map and the Act-now panel use, so the
     # header can never name a node the panel below it does not.
     if not merged.empty:
-        _worst = merged.sort_values("score", ascending=False).iloc[0]
+        _worst = _by_risk(merged).iloc[0]
         c2.metric(f"Highest risk · {score_text(_worst['score'])} {_worst['level']}",
                   _node_name(_worst["node_id"]))
     else:
@@ -256,13 +262,13 @@ with banner:
                 unsafe_allow_html=True)
         st.caption("📡 Physical Sensor = real hardware · 🌐 Live API = Open-Meteo · "
                    "🎬 Digital Twin (Demo) = deterministic demo · 💻 Offline Simulation "
-                   "= generated. Quality: ✅ ok · ≈ estimated/proxy · 🕒 stale · ⚠️ missing.")
+                   "= generated · 🗃️ Recorded (archive) = past data. "
+                   "Quality: ✅ ok · ≈ estimated/proxy · 🕒 stale · ⚠️ missing.")
 
 if not merged.empty:
     components.html(read_aloud_html(spoken_summary(merged.to_dict("records"))), height=70)
     with st.expander("Text-message alert (preview)"):
-        acting = merged[merged["level"].isin(ACTING_LEVELS)].sort_values(
-            "score", ascending=False)
+        acting = _by_risk(merged[merged["level"].isin(ACTING_LEVELS)])
         if not acting.empty:
             message = sms_alert(acting.iloc[0].to_dict())
             st.code(message, language=None, wrap_lines=True)
@@ -335,6 +341,7 @@ if large_text:
 tabs = st.tabs([
     "🗺️ Live Map", "📊 Network Overview", "🔬 Node Detail", "🤖 AI Explainability",
     "🧾 Evidence & Validation", "🔌 Hardware Readiness", "🏆 Competition Pitch",
+    "Real events",
 ])
 
 # === LIVE MAP =============================================================
@@ -657,6 +664,11 @@ with tabs[6]:
         "readings will be compared against the digital twin to validate the model.")
     st.info("Honest positioning: **sensor-ready, not sensor-dependent.** Until sensors "
             "are connected, Climate Mesh uses clearly-labelled simulated and/or API data.")
+
+# === REAL EVENTS ==========================================================
+with tabs[7]:
+    from dashboard.real_events import render_real_events
+    render_real_events(_scatter_map, colours)
 
 # --- Auto-refresh ---------------------------------------------------------
 if refresh:

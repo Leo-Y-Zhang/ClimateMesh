@@ -110,7 +110,7 @@ def test_readings_without_risk_rows_do_not_kill_the_page():
     insert_readings(SimulatedAdapter(demo=True).read_all("flood", tick=0.0))
     at = _render()
     assert not at.exception, [e.message for e in at.exception]
-    assert len(at.tabs) == 7
+    assert len(at.tabs) == 8
 
 
 def test_a_half_written_risk_frame_does_not_kill_the_page(detector):
@@ -121,7 +121,7 @@ def test_a_half_written_risk_frame_does_not_kill_the_page(detector):
         insert_risk_score(risk)
     at = _render()
     assert not at.exception, [e.message for e in at.exception]
-    assert len(at.tabs) == 7
+    assert len(at.tabs) == 8
 
 
 def test_rows_written_before_the_mesh_columns_existed_do_not_kill_the_page(detector):

@@ -27,7 +27,7 @@ MEASUREMENT_FIELDS = (
 # Valid values for the ``source`` field. These are the only data provenances
 # the system recognises, and they are always shown to the user so nobody can
 # mistake simulated or API data for physical-sensor data.
-VALID_SOURCES = ("simulation", "demo", "api", "hardware")
+VALID_SOURCES = ("simulation", "demo", "api", "hardware", "archive")
 
 # Valid quality flags. ``ok`` = trustworthy; ``estimated`` = derived/proxy
 # value (e.g. API water level from precipitation); ``stale`` = last-known-good

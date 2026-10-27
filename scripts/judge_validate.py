@@ -10,8 +10,8 @@ works. It runs, in order:
 
 The two demo cycles run in judge mode (simulation clock frozen at the start of
 the event) so they show exactly the same deterministic frame as
-scripts/demo_tour.py and the README: normal avg 3.9 / 0 alerts, flood avg 50.8
-/ 10 alerts.
+scripts/demo_tour.py and the README: normal avg 3.9 / 0 alerts, flood avg 43.0
+/ 4 alerts.
   5. evidence export        (scripts/export_evidence.py)
 
 then prints a compact PASS/FAIL summary table that is easy to screenshot. The
@@ -27,6 +27,7 @@ own isolated database internally, so they are unaffected.
 
 from __future__ import annotations
 
+import argparse
 import os
 import re
 import subprocess
@@ -94,11 +95,13 @@ def render_summary_table(results) -> str:
     rows = [line, "  Climate Mesh — Judge Validation", line,
             f"  {'Step':<30} {'Result':<8} {'Detail'}", thin]
     for name, ok, detail in results:
-        tag = "PASS" if ok else "FAIL"
+        tag = "SKIPPED" if ok is None else ("PASS" if ok else "FAIL")
         rows.append(f"  {name:<30} {tag:<8} {detail}")
     rows.append(thin)
     n_pass = sum(1 for _n, ok, _d in results if ok)
-    verdict = "PASS" if overall_ok(results) else "FAIL"
+    verdict = ("PARTIAL" if any(ok is None for _, ok, _ in results)
+               and all(ok is not False for _, ok, _ in results)
+               else ("PASS" if overall_ok(results) else "FAIL"))
     rows.append(f"  RESULT: {verdict}  ({n_pass}/{len(results)} steps passed)")
     rows.append(line)
     return "\n".join(rows)
@@ -132,6 +135,10 @@ def _reset_judge_db() -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--skip-tests', action='store_true',
+                        help='omit the full suite (reported SKIPPED; result PARTIAL)')
+    args = parser.parse_args()
     env = _child_env()
     _reset_judge_db()
 
@@ -151,8 +158,11 @@ def main() -> int:
         ("5. Evidence export", [PYTHON, "scripts/export_evidence.py"], summarize_export),
     ]
 
-    results: list[tuple[str, bool, str]] = []
+    results: list[tuple[str, bool | None, str]] = []
     for name, argv, summarize in steps:
+        if args.skip_tests and name == '2. Pytest suite':
+            results.append((name, None, 'SKIPPED: --skip-tests'))
+            continue
         print(f"\n>>> {name}: {' '.join(argv[1:]) or argv[0]}")
         print("-" * 64)
         code, output = _run(argv, env)
@@ -166,7 +176,7 @@ def main() -> int:
 
     print("\n")
     print(render_summary_table(results))
-    return 0 if overall_ok(results) else 1
+    return 0 if all(ok is not False for _, ok, _ in results) else 1
 
 
 if __name__ == "__main__":

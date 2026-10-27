@@ -68,8 +68,16 @@ def test_storm_raises_wind_and_pressure_risk(detector):
     assert storm[node]["pressure_sub"] > normal[node]["pressure_sub"]
 
 
-def test_flood_triggers_mesh_correlation(detector):
+def test_flood_does_not_count_humidity_as_neighbour_flood_evidence(detector):
     results = compute_all(_readings("flood"), detector)
+    # Removing pressure from hazard selection lets genuine raised-water
+    # neighbours agree again; humidity alone still cannot select flood.
+    assert any(r["correlated"] and r["dominant_hazard"] == "flood" for r in results)
+    assert all(r["water_sub"] >= 15 for r in results if r["dominant_hazard"] == "flood")
+
+
+def test_storm_triggers_mesh_correlation(detector):
+    results = compute_all(_readings("storm"), detector)
     assert any(r["correlated"] for r in results)
     # A correlated node gets the mesh multiplier applied.
     correlated = [r for r in results if r["correlated"]]

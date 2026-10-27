@@ -118,3 +118,21 @@ MQ-7 air-quality and future water-quality channels.
 - **`sensors/vernier_adapter.py`** imports `from gdx import gdx` (the helper).
 - **This document** is the single source of truth for getting both pieces in
   place. README and the dashboard Hardware Readiness tab link here.
+
+## Street kiosk and on-device evidence
+
+For the Pi's desktop window/wall display, run `./setup_pi.sh --kiosk` from the
+repository root. It installs the normal environment, enables engine/street
+systemd user services and adds marked Chromium autostart blocks for Bookworm's
+labwc and Wayfire desktops. Preview with `--kiosk --dry-run`; remove it with
+`--kiosk --uninstall`. Configure desktop autologin and screen blanking yourself
+using the printed `sudo raspi-config nonint do_boot_behaviour B4` and
+`sudo raspi-config nonint do_blanking 1` commands. No linger is required.
+
+Run `python scripts/pi_day.py` inside the virtual environment to collect timed
+local Markdown/JSON evidence, including the exact hardware diagnostic and a
+60-second `auto` run's actual data sources. `--quick` skips the full suite and
+live run explicitly. Reports hash the hostname and scrub usernames/home paths;
+they never upload anything. See [Street display on the Pi](../README.md#street-display-on-the-pi)
+and [On-device evidence](../README.md#on-device-evidence-pi_day) for screen sizes,
+query options, report contents and optional screenshot generation.

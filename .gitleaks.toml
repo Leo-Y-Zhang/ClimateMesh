@@ -1,0 +1,7 @@
+# Default gitleaks rules, plus one narrow allowance.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "SHA-256 digests of source files (the round-2 pre-registration lock), not secrets"
+paths = ['''^evidence/replay/round-2-lock\.json$''']

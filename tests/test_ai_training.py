@@ -6,7 +6,11 @@ No real network is ever used: the archive fetch is monkeypatched to either raise
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 import numpy as np
+
+from config.nodes import ENVIRONMENTS
 
 from ai import anomaly_model as am
 from ai.anomaly_model import AnomalyDetector
@@ -71,7 +75,8 @@ def _canned_payload(n_hours: int = 120):
     weather = {"hourly": {
         "temperature_2m": [15.0 + (i % 12) for i in range(n_hours)],
         "relative_humidity_2m": [68.0 for _ in range(n_hours)],
-        "surface_pressure": [1012.0 for _ in range(n_hours)],
+        "time": [(datetime(2023, 6, 1) + timedelta(hours=i)).isoformat() for i in range(n_hours)],
+        "pressure_msl": [1012.0 for _ in range(n_hours)],
         "wind_speed_10m": [4.5 for _ in range(n_hours)],
         "precipitation": [0.1 for _ in range(n_hours)],
     }}
@@ -91,7 +96,7 @@ def test_historical_uses_archive_when_available(monkeypatch, tmp_path):
     d = AnomalyDetector().train(mode="historical", quiet=True)
 
     assert d.training_mode == "historical"
-    assert d.n_train == 120
+    assert d.n_train == 120 * len(ENVIRONMENTS)
     assert "Open-Meteo" in d.training_window
     assert d.fallback_reason is None
 

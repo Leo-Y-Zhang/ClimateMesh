@@ -1,0 +1,7 @@
+flood-2021-07-12: wrote 24 hours, 20 nodes, 34 gauges to data/history/flood-2021-07-12.json
+heat-2022-07-19: wrote 48 hours, 20 nodes, 0 gauges to data/history/heat-2022-07-19.json
+storm-2022-02-18: wrote 24 hours, 20 nodes, 0 gauges to data/history/storm-2022-02-18.json
+holdout-2023-03-06: wrote 168 hours, 20 nodes, 0 gauges to data/history/holdout-2023-03-06.json
+holdout-2023-06-05: wrote 168 hours, 20 nodes, 0 gauges to data/history/holdout-2023-06-05.json
+holdout-2023-09-04: wrote 168 hours, 20 nodes, 0 gauges to data/history/holdout-2023-09-04.json
+holdout-2023-12-04: wrote 168 hours, 20 nodes, 0 gauges to data/history/holdout-2023-12-04.json

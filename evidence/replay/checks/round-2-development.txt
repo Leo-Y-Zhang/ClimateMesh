@@ -1,0 +1,23 @@
+flood-2021-07-12 / grid: peak 100.0; alerts {'flood': 4, 'sensor-check': 32}; damped nodes ['BRIXTON', 'LEWISHAM', 'REGENTS-CANAL', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER', 'WALTHAMSTOW']
+  First 6 hours: peak 28.1, AI amplified 0 node-hours, alerts {}. Wrote evidence/replay/flood-2021-07-12-grid.json
+flood-2021-07-12 / gauges: peak 100.0; alerts {'flood': 20, 'sensor-check': 24}; damped nodes ['BRIXTON', 'LEWISHAM', 'REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER', 'WALTHAMSTOW']
+  First 6 hours: peak 28.1, AI amplified 0 node-hours, alerts {}. Wrote evidence/replay/flood-2021-07-12-gauges.json
+  Rain gauges: 2 used, 32 excluded; all totals, distances and exclusion reasons are in the JSON.
+  Putney Heath -> PUTNEY: 47.25 mm, peak 33.24 mm at 2021-07-12T16:00; 1.4097932123405217 km.
+  Wanstead -> ILFORD: 8.0 mm, peak 2.6 mm at 2021-07-12T17:00; 2.8970109027808504 km.
+heat-2022-07-19 / grid: peak 100.0; alerts {'heatwave': 396, 'sensor-check': 4, 'smog': 91}; damped nodes ['BRIXTON', 'DULWICH', 'RICHMOND-PARK', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  First 6 hours: peak 45.6, AI amplified 0 node-hours, alerts {}. Wrote evidence/replay/heat-2022-07-19-grid.json
+storm-2022-02-18 / grid: peak 100.0; alerts {'storm': 129}; damped nodes ['REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  First 6 hours: peak 28.8, AI amplified 2 node-hours, alerts {}. Wrote evidence/replay/storm-2022-02-18-grid.json
+holdout-2023-03-06 / grid: peak 100.0; alerts {'cold': 1018, 'risk': 3, 'sensor-check': 47, 'smog': 647}; damped nodes ['BRIXTON', 'DULWICH', 'LEWISHAM', 'PUTNEY', 'REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER', 'WIMBLEDON']
+  Episodes: 331 per-node, 21 London-wide; AI firing 1556/3360 (46.31%); quiet 30.00%
+  First 6 hours: peak 100.0, AI amplified 36 node-hours, alerts {'cold': 120}. Wrote evidence/replay/holdout-2023-03-06-grid.json.gz
+holdout-2023-06-05 / grid: peak 100.0; alerts {'smog': 524}; damped nodes ['REGENTS-CANAL', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  Episodes: 81 per-node, 5 London-wide; AI firing 999/3360 (29.73%); quiet 0.00%
+  First 6 hours: peak 17.3, AI amplified 0 node-hours, alerts {}. Wrote evidence/replay/holdout-2023-06-05-grid.json.gz
+holdout-2023-09-04 / grid: peak 100.0; alerts {'heatwave': 58, 'smog': 1370}; damped nodes ['BRIXTON', 'DULWICH', 'REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  Episodes: 294 per-node, 10 London-wide; AI firing 1445/3360 (43.01%); quiet 20.00%
+  First 6 hours: peak 75.0, AI amplified 24 node-hours, alerts {'smog': 31}. Wrote evidence/replay/holdout-2023-09-04-grid.json.gz
+holdout-2023-12-04 / grid: peak 100.0; alerts {'cold': 77, 'sensor-check': 3, 'smog': 438}; damped nodes ['DULWICH', 'LEWISHAM', 'PUTNEY', 'REGENTS-CANAL', 'RICHMOND-PARK', 'RIVER-LEA', 'RIVER-WANDLE', 'THAMES-BARRIER']
+  Episodes: 110 per-node, 10 London-wide; AI firing 287/3360 (8.54%); quiet 10.00%
+  First 6 hours: peak 46.0, AI amplified 12 node-hours, alerts {}. Wrote evidence/replay/holdout-2023-12-04-grid.json.gz

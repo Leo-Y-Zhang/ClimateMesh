@@ -1,0 +1,60 @@
+
+>>> 1. Smoke test: scripts/smoke_test.py
+----------------------------------------------------------------
+      [PASS] 20 nodes generate readings — got 20
+      [PASS] readings match canonical shape
+      [PASS] risk scores within 0-100
+      [PASS] risk levels valid
+      [PASS] dashboard can read latest readings
+      [PASS] dashboard can read risk scores
+      [PASS] simulation works without sensors
+      [PASS] hardware mode does not crash without sensors — No sensor driver library detected — simulation fallback active.
+      [PASS] node registry has 20 nodes
+    ----------------------------------------
+    RESULT: 10/10 checks passed — PASS
+    No sensor driver library detected — simulation fallback active.
+
+>>> 2. Pytest suite: -m pytest
+----------------------------------------------------------------
+    ........................................................................ [ 20%]
+    ........................................................................ [ 41%]
+    ........................................................................ [ 62%]
+    ........................................................................ [ 83%]
+    .........................................................                [100%]
+    345 passed in 42.64s
+
+>>> 3. Demo cycle (normal): run.py --mode demo --scenario normal --judge-mode --once
+----------------------------------------------------------------
+    [once] mode=demo scenario=normal source=demo nodes=20 avg_risk=3.9 alerts=0
+
+>>> 4. Demo cycle (flood): run.py --mode demo --scenario flood --judge-mode --once
+----------------------------------------------------------------
+    [once] mode=demo scenario=flood source=demo nodes=20 avg_risk=43.0 alerts=4
+
+>>> 5. Evidence export: scripts/export_evidence.py
+----------------------------------------------------------------
+    [evidence] Wrote 5 files to evidence/
+               readings=40 risk_scores=40 alerts=4 nodes_online=20
+               avg_risk=43.0 max_risk=100.0 training_mode=synthetic seed=1234 commit=7d39000d
+               data source summary:
+                 Source       Meaning                                Count
+                 archive      recorded Open-Meteo / gauge archive data     0
+                 hardware     real physical sensor                       0
+                 api          live Open-Meteo data                       0
+                 demo         deterministic demo / digital-twin data    40
+                 simulation   generated offline data                     0
+
+
+================================================================
+  Climate Mesh — Judge Validation
+================================================================
+  Step                           Result   Detail
+----------------------------------------------------------------
+  1. Smoke test                  PASS     10/10 checks
+  2. Pytest suite                PASS     345 passed
+  3. Demo cycle (normal)         PASS     nodes=20 avg_risk=3.9 alerts=0
+  4. Demo cycle (flood)          PASS     nodes=20 avg_risk=43.0 alerts=4
+  5. Evidence export             PASS     5 files
+----------------------------------------------------------------
+  RESULT: PASS  (5/5 steps passed)
+================================================================

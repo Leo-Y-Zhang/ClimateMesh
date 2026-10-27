@@ -6,7 +6,7 @@ renders one of these badges so that any screenshot self-labels exactly where its
 numbers came from — a physical sensor, the live API, the demo digital twin, or
 offline simulation — and how trustworthy each value is.
 
-The four data-source labels are deliberately the plain-English phrases a judge
+The data-source labels are deliberately the plain-English phrases a judge
 sees on screen:
 
     hardware    -> "Physical Sensor"
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 # source key -> (label, emoji, background colour, text colour)
 SOURCE_BADGES: dict[str, tuple[str, str, str, str]] = {
+    "archive": ("Recorded (archive)", "🗃️", "#0d47a1", "#ffffff"),
     "hardware": ("Physical Sensor", "📡", "#1b5e20", "#ffffff"),
     "api": ("Live API", "🌐", "#0d47a1", "#ffffff"),
     "demo": ("Digital Twin (Demo)", "🎬", "#4a148c", "#ffffff"),
