@@ -20,25 +20,25 @@ and the quality flags map 1:1 to the canonical reading flags
 
 from __future__ import annotations
 
-# source key -> (label, emoji, background colour, text colour)
-SOURCE_BADGES: dict[str, tuple[str, str, str, str]] = {
-    "archive": ("Recorded (archive)", "🗃️", "#0d47a1", "#ffffff"),
-    "hardware": ("Physical Sensor", "📡", "#1b5e20", "#ffffff"),
-    "api": ("Live API", "🌐", "#0d47a1", "#ffffff"),
-    "demo": ("Digital Twin (Demo)", "🎬", "#4a148c", "#ffffff"),
-    "simulation": ("Offline Simulation", "💻", "#37474f", "#ffffff"),
+# source key -> (label, background colour, text colour)
+SOURCE_BADGES: dict[str, tuple[str, str, str]] = {
+    "archive": ("Recorded (archive)", "#eaf0f5", "#29465b"),
+    "hardware": ("Physical Sensor", "#edf2ef", "#334d40"),
+    "api": ("Live API", "#eaf0f5", "#29465b"),
+    "demo": ("Digital Twin (Demo)", "#f0eef3", "#4b4259"),
+    "simulation": ("Offline Simulation", "#eff1f3", "#3e4a54"),
 }
 
-# quality flag -> (label, emoji, background colour, text colour)
-QUALITY_BADGES: dict[str, tuple[str, str, str, str]] = {
-    "ok": ("ok", "✅", "#1b5e20", "#ffffff"),
-    "estimated": ("estimated", "≈", "#f9a825", "#000000"),
-    "stale": ("stale", "🕒", "#ef6c00", "#ffffff"),
-    "missing": ("missing", "⚠️", "#b71c1c", "#ffffff"),
+# quality flag -> (label, background colour, text colour)
+QUALITY_BADGES: dict[str, tuple[str, str, str]] = {
+    "ok": ("ok", "#edf2ef", "#334d40"),
+    "estimated": ("estimated", "#f4f1e9", "#5a5035"),
+    "stale": ("stale", "#f3eee8", "#5c4938"),
+    "missing": ("missing", "#f3eded", "#624343"),
 }
 
-_UNKNOWN_SOURCE = ("Unknown source", "❔", "#616161", "#ffffff")
-_UNKNOWN_QUALITY = ("unknown", "❔", "#616161", "#ffffff")
+_UNKNOWN_SOURCE = ("Unknown source", "#eff1f3", "#3e4a54")
+_UNKNOWN_QUALITY = ("unknown", "#eff1f3", "#3e4a54")
 
 
 def source_label(source: str) -> str:
@@ -51,33 +51,31 @@ def quality_label(flag: str) -> str:
     return QUALITY_BADGES.get(flag, _UNKNOWN_QUALITY)[0]
 
 
-def _pill(label: str, emoji: str, bg: str, fg: str) -> str:
+def _pill(label: str, bg: str, fg: str) -> str:
     return (
-        f"<span style='display:inline-block;padding:2px 10px;margin:2px 4px 2px 0;"
-        f"border-radius:12px;font-size:0.80rem;font-weight:600;white-space:nowrap;"
-        f"background:{bg};color:{fg};'>{emoji} {label}</span>"
+        f"<span class='mesh-badge' style='background:{bg};color:{fg};'>{label}</span>"
     )
 
 
 def source_badge_html(source: str) -> str:
-    """Inline HTML pill for a data source. Safe for ``st.markdown(unsafe_allow_html=True)``."""
-    label, emoji, bg, fg = SOURCE_BADGES.get(source, _UNKNOWN_SOURCE)
-    return _pill(label, emoji, bg, fg)
+    """Inline text badge for a source. Safe for ``st.markdown(unsafe_allow_html=True)``."""
+    label, bg, fg = SOURCE_BADGES.get(source, _UNKNOWN_SOURCE)
+    return _pill(label, bg, fg)
 
 
 def quality_badge_html(flag: str) -> str:
-    """Inline HTML pill for a quality flag."""
-    label, emoji, bg, fg = QUALITY_BADGES.get(flag, _UNKNOWN_QUALITY)
-    return _pill(label, emoji, bg, fg)
+    """Inline text badge for a quality flag."""
+    label, bg, fg = QUALITY_BADGES.get(flag, _UNKNOWN_QUALITY)
+    return _pill(label, bg, fg)
 
 
 def source_quality_badges_html(source: str, quality_flag: str) -> str:
-    """Combined source + quality pills, ready to drop into a panel header."""
+    """Combined source + quality badges, ready to drop into a panel header."""
     return source_badge_html(source) + quality_badge_html(quality_flag)
 
 
 def sources_legend_html(sources) -> str:
-    """A legend row of source pills for every provenance currently in view."""
+    """A legend row of source badges for every provenance currently in view."""
     seen: list[str] = []
     for s in sources:
         if s not in seen:

@@ -35,7 +35,7 @@ with no cloud subscription.
 **Measured results** *(from this repo's deterministic simulation/demo pipeline —
 not field measurements; no physical sensor has been validated yet)*:
 
-- **433/433 automated tests pass** on Python 3.11 in the recorded-event verification. The project also provides CI for Python 3.11/3.13 and 64-bit Arm Linux, plus `python scripts/judge_validate.py`.
+- **461/461 automated tests pass** on Python 3.11 (Linux, 3 November 2026). The project also provides CI for Python 3.11/3.13 and 64-bit Arm Linux, plus `python scripts/judge_validate.py`.
 - The demo tour (`python scripts/demo_tour.py`, a few seconds) discriminates
   correctly across scenarios: **normal stays SAFE** (avg risk 3.9, 0 alerts)
   while **flood escalates the right nodes** (Regent's Canal → CRITICAL
@@ -164,7 +164,7 @@ Vernier Go Direct Weather sensor is connected over USB, that node switches to
 ## Quick start (any computer)
 
 **Prerequisites:** Python **3.11, 3.12 or 3.13** and `git`. The recorded-event
-replay and current 433-test suite were verified here on Python 3.11.2.
+replay was verified on Python 3.11.2; the current 461-test suite passes on Python 3.11.
 CI runs 3.11 (what Raspberry Pi OS Bookworm
 ships) and 3.13 (what the Trixie-based release ships) on x86-64, plus 3.11 on
 a 64-bit Arm runner that installs prebuilt wheels only. Nothing else is needed
@@ -194,7 +194,7 @@ pytest
 step. One command runs everything a reviewer needs:
 
 ```bash
-python scripts/judge_validate.py   # smoke test + all 433 tests + 2 demo cycles + export
+python scripts/judge_validate.py   # smoke test + all 461 tests + 2 demo cycles + export
 python scripts/evaluate.py         # detection and false-alarm rates vs a thresholds-only baseline
 ```
 
@@ -468,7 +468,7 @@ retrieval times, licences and attributions remain in each fixture.
 ## Screenshots
 
 Captured from this exact tree in **demo / judge mode** (flood scenario unless
-stated). Every panel self-labels its data source — here **🎬 Digital Twin
+stated). Every panel self-labels its data source — here **Digital Twin
 (Demo)** — so nothing is passed off as a real measurement. The full set,
 including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
 
@@ -497,9 +497,9 @@ The dashboard's 8 tabs are all screenshot-worthy — see
 **Live Map** (risk-coloured London nodes), **Network Overview** (KPIs + charts),
 **Node Detail** (per-node readings, source/quality badges, risk breakdown), **AI
 Explainability**, **Evidence & Validation**, **Hardware Readiness**, **Competition
-Pitch**, and **Real events**. Every panel carries a provenance badge — **📡 Physical Sensor**, **🌐 Live
-API**, **🎬 Digital Twin (Demo)**, **💻 Offline Simulation** or **Recorded (archive)** — plus a quality
-badge (✅ ok · ≈ estimated · 🕒 stale · ⚠️ missing), so each shot self-labels its
+Pitch**, and **Real events**. Every panel carries a small bordered text badge for provenance — **Physical Sensor**, **Live
+API**, **Digital Twin (Demo)**, **Offline Simulation** or **Recorded (archive)** — plus a quality
+badge (ok · estimated · stale · missing), so each shot self-labels its
 data source. Two terminal screenshots round out the evidence:
 
 - `python scripts/judge_validate.py` → the compact PASS/FAIL validation table.
@@ -516,9 +516,9 @@ evidence export:
 
 ```mermaid
 flowchart TD
-    HW["📡 Physical Sensor<br/>(Vernier GDX-WTHR)"]
-    API["🌐 Live API<br/>(Open-Meteo)"]
-    DT["🎬 Digital Twin / Demo<br/>+ 💻 Offline Simulation"]
+    HW["Physical Sensor<br/>(Vernier GDX-WTHR)"]
+    API["Live API<br/>(Open-Meteo)"]
+    DT["Digital Twin (Demo)<br/>+ Offline Simulation"]
 
     HW --> CR["Canonical reading<br/>(one fixed shape + source + quality_flag)"]
     API --> CR
@@ -720,7 +720,7 @@ action playbooks**, **mesh correlation**, a **local digital twin**, and
 ```bash
 python scripts/judge_validate.py     # one command: smoke + pytest + demos + export
 python scripts/demo_tour.py          # one command: all 5 scenarios, deterministic
-pytest                               # the full unit-test suite (433 tests)
+pytest                               # the full unit-test suite (461 tests)
 python scripts/smoke_test.py
 python scripts/run_validation.py --mode demo --scenario flood
 python scripts/test_hardware_read.py # REAL HARDWARE vs FALLBACK SIMULATION

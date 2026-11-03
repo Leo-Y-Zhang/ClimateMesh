@@ -63,7 +63,7 @@ python run.py --mode hardware            # one physical node over a simulated me
 ```
 
 In the dashboard's **Hardware Readiness** tab the node provenance badge flips to
-**📡 Physical Sensor** once a device is actually read.
+**Physical Sensor** once a device is actually read.
 
 ## "Sensor not detected" troubleshooting
 

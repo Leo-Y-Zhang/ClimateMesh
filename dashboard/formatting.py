@@ -97,21 +97,21 @@ def corroboration_line(corroboration: str, agreeing: int, neighbours: int) -> st
     state = str(corroboration or "quiet")
     agreeing, neighbours = _count(agreeing), _count(neighbours)
     if state == "corroborated":
-        return (f"✅ **Confirmed by the mesh** — {agreeing} of this node's "
+        return (f"**Confirmed by the mesh** — {agreeing} of this node's "
                 f"{neighbours} neighbours within 6 km report the same hazard.")
     if state == "uncorroborated":
-        return ("⚠️ **No neighbour sees this.** None of this node's "
+        return ("**No neighbour sees this.** None of this node's "
                 f"{neighbours} neighbours within 6 km reports the same hazard, so "
                 "the score is damped and the action is to check the equipment, "
                 "not the hazard.")
     if state == "partial":
-        return (f"🟡 **Partly corroborated** — {agreeing} of {neighbours} neighbours "
+        return (f"**Partly corroborated** — {agreeing} of {neighbours} neighbours "
                 "agree, which is not yet enough to escalate.")
     if state == "unavailable":
         if neighbours == 0:
-            return ("ℹ️ **Cannot be corroborated** — no other node lies within 6 km, "
+            return ("**Cannot be corroborated** — no other node lies within 6 km, "
                     "so the mesh has no second opinion to offer here.")
-        return (f"ℹ️ **Cannot be corroborated** — only {neighbours} other node"
+        return (f"**Cannot be corroborated** — only {neighbours} other node"
                 f"{'' if neighbours == 1 else 's'} "
                 f"{'lies' if neighbours == 1 else 'lie'} within 6 km, so the mesh has "
                 "no second opinion to offer here.")

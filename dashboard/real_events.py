@@ -59,7 +59,7 @@ def render_real_events(scatter_map, colours):
     st.write(step["hour"])
     frame = pd.DataFrame(step["nodes"])
     frame["size"] = frame["score"].clip(lower=8)
-    st.plotly_chart(scatter_map(frame, offline=True, colours=colours), use_container_width=True,
+    st.plotly_chart(scatter_map(frame, offline=True, colours=colours), use_container_width=True, theme=None,
                     key=f"recorded-map-{event}-{variant}-{i}")
     st.caption(payload["clock_policy"])
     figure_name = (f"{event}-hero.png" if event.startswith("flood") else

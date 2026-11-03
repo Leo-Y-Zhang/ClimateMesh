@@ -21,6 +21,7 @@ from config.nodes import NEIGHBOURS
 from dashboard.accessibility import PALETTES, text_on
 from dashboard.badges import source_badge_html
 from dashboard.formatting import node_name, score_text, short_name
+from dashboard.theme import BADGE_CSS
 from dashboard.street_helpers import (
     THEMES,
     data_age,
@@ -305,11 +306,12 @@ def neighbours_html(row: dict, rows: list[dict], colours: dict[str, str]) -> str
 
 def render() -> None:
     st.set_page_config(
-        page_title="Climate Mesh — Street", page_icon="🌍", layout="wide"
+        page_title="Climate Mesh — Street", layout="wide"
     )
     theme = THEMES["light" if st.query_params.get("theme") == "light" else "dark"]
     variables = ";".join(f"--{key}:{value}" for key, value in theme.items())
-    st.markdown(f"<style>:root {{{variables}}}</style>" + CSS, unsafe_allow_html=True)
+    st.markdown(CSS.replace("<style>", f"<style>:root {{{variables}}}")
+                .replace("</style>", BADGE_CSS + "</style>"), unsafe_allow_html=True)
     try:
         init_db()
         rows = join_nodes(get_latest_readings_per_node(), get_risk_scores())

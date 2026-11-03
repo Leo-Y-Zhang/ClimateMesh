@@ -35,7 +35,7 @@ def test_palettes_keep_the_canonical_bands_and_standard_colours():
 
 
 BACKGROUNDS = [colour for palette in a.PALETTES.values() for colour in palette.values()]
-BACKGROUNDS += [badge[2] for badge in (*badges.SOURCE_BADGES.values(),
+BACKGROUNDS += [badge[1] for badge in (*badges.SOURCE_BADGES.values(),
                                     *badges.QUALITY_BADGES.values(),
                                     badges._UNKNOWN_SOURCE, badges._UNKNOWN_QUALITY)]
 
