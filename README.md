@@ -1,4 +1,4 @@
-# 🌍 Climate Mesh
+# Climate Mesh
 
 **Decentralised climate monitoring & AI-powered early-warning mesh — runs on a Raspberry Pi 5.**
 
@@ -85,17 +85,17 @@ python -m streamlit run dashboard/app.py                  # terminal 2, opens ht
 
 ## What works right now
 
-- ✅ 20 named Greater London nodes on a live risk map (an illustrative layout
+- 20 named Greater London nodes on a live risk map (an illustrative layout
   of well-known public landmarks — see `config/nodes.py`; no node marks a
   deployed sensor).
-- ✅ Five demo scenarios: **normal, flood, heatwave, smog, storm**.
-- ✅ 0–100 risk scores with **SAFE / MODERATE / WARNING / CRITICAL** levels.
-- ✅ Explainable AI (Isolation Forest) + **mesh correlation** across adjacent nodes.
-- ✅ Plain-English alerts with **community action playbooks**.
-- ✅ A 8-tab Streamlit dashboard with **source + quality badges on every panel**.
-- ✅ Reproducible **evidence export** (CSV + JSON) with a **data-source summary table**.
-- ✅ `pytest` test suite and a **one-command judge validation** (`scripts/judge_validate.py`).
-- ✅ Runs **fully offline, with no sensors**, on a Raspberry Pi 5.
+- Five demo scenarios: **normal, flood, heatwave, smog, storm**.
+- 0–100 risk scores with **SAFE / MODERATE / WARNING / CRITICAL** levels.
+- Explainable AI (Isolation Forest) + **mesh correlation** across adjacent nodes.
+- Plain-English alerts with **community action playbooks**.
+- A 8-tab Streamlit dashboard with **source + quality badges on every panel**.
+- Reproducible **evidence export** (CSV + JSON) with a **data-source summary table**.
+- `pytest` test suite and a **one-command judge validation** (`scripts/judge_validate.py`).
+- Runs **fully offline, with no sensors**, on a Raspberry Pi 5.
 
 ### One command for judges
 
