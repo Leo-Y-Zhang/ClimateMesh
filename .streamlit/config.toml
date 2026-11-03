@@ -25,3 +25,11 @@ toolbarMode = "viewer"
 # string is truthy, which would show FULL details - so this line needs the
 # streamlit >= 1.41 floor that requirements.txt pins.
 showErrorDetails = "none"
+
+[theme]
+base = "light"
+primaryColor = "#2b5a7a"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f3f5f7"
+textColor = "#263442"
+font = "sans serif"

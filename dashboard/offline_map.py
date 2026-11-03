@@ -191,7 +191,8 @@ def offline_map(df: pd.DataFrame, height: int = 560,
                 tickvals=[(lo + hi) / 2 for _, lo, hi, _ in BANDS],
                 ticktext=[f"{band}<br><span style='font-size:9px'>{lo}–{hi}</span>"
                           for band, lo, hi, _ in BANDS],
-                tickfont=dict(size=10, color=_INK), thickness=14, len=0.62, y=0.55,
+                tickfont=dict(size=10, color=_INK), thickness=10, len=0.7,
+                orientation="h", x=0.5, xanchor="center", y=0, yanchor="top",
                 outlinewidth=0),
             line=dict(width=1.5, color="white"), opacity=0.95),
         customdata=list(zip(df["node_id"], df["level"], score.round(0), df["source"],
@@ -219,7 +220,7 @@ def offline_map(df: pd.DataFrame, height: int = 560,
     fig.update_xaxes(range=list(LON_RANGE), **axis)
     fig.update_yaxes(range=list(LAT_RANGE), scaleanchor="x", scaleratio=ASPECT, **axis)
     fig.update_layout(
-        height=height, margin=dict(l=0, r=0, t=0, b=0),
+        height=height, margin=dict(l=0, r=0, t=0, b=64),
         plot_bgcolor="#f3f6fa", paper_bgcolor="white", hovermode="closest",
         showlegend=False)
     return fig

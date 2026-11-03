@@ -148,7 +148,7 @@ def test_a_node_with_one_neighbour_is_described_truthfully(detector):
     assert "1 other node lies within 6 km" in line, line
     assert "node(s)" not in line
     assert corroboration_line("unavailable", 0, 0).startswith(
-        "ℹ️ **Cannot be corroborated** — no other node lies")
+        "**Cannot be corroborated** — no other node lies")
 
 
 # --- 7. the digits shown must match the digits the band came from --------
@@ -183,7 +183,7 @@ def test_the_header_and_the_act_now_panel_never_name_different_nodes(detector):
     at = _render()
     assert not at.exception, [e.message for e in at.exception]
     header = next(m for m in at.metric if str(m.label).startswith("Highest risk"))
-    named_in_panel = [e.value for e in at.error] + [w.value for w in at.warning]
+    named_in_panel = [m.value for m in at.tabs[0].markdown if "Act now" in m.value]
     acting = " ".join(str(v) for v in named_in_panel)
     if "Act now" in acting:
         assert header.value in acting, (header.value, acting)

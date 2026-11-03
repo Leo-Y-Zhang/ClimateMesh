@@ -40,13 +40,17 @@ def _render(**state):
 def test_dashboard_renders_with_an_empty_database():
     at = _render()
     assert not at.exception, [e.message for e in at.exception]
-    assert len(at.tabs) == 8
+    assert [tab.label for tab in at.tabs] == [
+        "Live Map", "Network Overview", "Node Detail", "AI Explainability",
+        "Evidence & Validation", "Hardware Readiness", "Competition Pitch", "Real events",
+    ]
     assert any("No data yet" in w.value for w in at.warning)
 
 
 def test_dashboard_renders_every_tab_with_live_data(detector, tmp_path, monkeypatch):
     readings = SimulatedAdapter(demo=True).read_all("heatwave", tick=0.0)
     insert_readings(readings)
+    insert_readings(SimulatedAdapter(demo=True).read_all("heatwave", tick=1.0))
     results = compute_all(get_latest_readings_per_node(), detector)
     for risk in results:
         insert_risk_score(risk)
@@ -66,6 +70,40 @@ def test_dashboard_renders_every_tab_with_live_data(detector, tmp_path, monkeypa
     assert "low temperature" not in page
     labels = {m.label for m in at.metric}
     assert {"Mode", "Average risk", "Total readings"} <= labels
+    nodes = at.sidebar.dataframe[0].value
+    assert list(nodes.columns) == ["Node", "Score", "Band", "Source"]
+    assert nodes["Score"].is_monotonic_decreasing
+    assert set(nodes["Source"]) == {"Twin"}  # short label; full wording is in the header badges
+    checks = at.tabs[5].dataframe[0].value
+    assert list(checks.columns) == ["Check", "Result"]
+    assert set(checks["Result"]) <= {"Yes", "No"}
+    figures = [json.loads(chart.proto.spec) for chart in at.get("plotly_chart")]
+    assert all(fig["layout"]["template"]["layout"]["colorway"] == ["#2b5a7a"]
+               for fig in figures)
+    history = [json.loads(chart.proto.spec) for chart in at.tabs[2].get("plotly_chart")
+               if any(trace.get("mode") == "lines" for trace in json.loads(chart.proto.spec)["data"])]
+    assert [fig["layout"]["title"]["text"] for fig in history] == [
+        "Temperature (°C)", "Water level (m)", "Air quality (AQI)", "Barometric pressure (hPa)",
+    ]
+
+
+def test_recent_alerts_are_limited_and_playbooks_grouped(detector):
+    insert_readings(SimulatedAdapter(demo=True).read_all("flood", tick=0.0))
+    for risk in compute_all(get_latest_readings_per_node(), detector):
+        insert_risk_score(risk)
+    for i in range(15):
+        insert_alert("BRIXTON", "flood" if i % 2 else "sensor-check",
+                     f"Test alert {i}", "warning", source="demo")
+    at = _render()
+    assert not at.exception, [e.message for e in at.exception]
+    overview = at.tabs[1]
+    table = overview.dataframe[0].value
+    assert list(table.columns) == ["Time", "Node", "Severity", "Type", "Message"]
+    assert len(table) == 12
+    assert {e.label for e in overview.expander} == {
+        "What to do about this flood alert", "What to do about this sensor-check alert",
+    }
+    assert len(overview.expander) == 2
 
 
 @pytest.mark.parametrize("offline", [True, False])
@@ -94,12 +132,15 @@ def test_dashboard_renders_with_accessibility_and_data(detector, offline):
         assert map_figure["layout"]["coloraxis"]["colorscale"] == band_scale(palette)
     # Node Detail also has bars for sensor factors, which are not risk bands.
     risk_chart = next(fig for fig in figures if fig["layout"].get("xaxis", {}).get(
-        "title", {}).get("text") == "risk score (0–100)")
+        "title", {}).get("text") == "Risk score (0–100)")
     bars = [t for t in risk_chart["data"] if t["type"] == "bar"]
     assert bars
     assert all(t["marker"]["color"] == palette[t["name"]] for t in bars)
-    pie = next(t for fig in figures for t in fig["data"] if t["type"] == "pie")
-    assert pie["marker"]["colors"] == [palette[band] for band in pie["labels"]]
+    assert not any(t["type"] == "pie" for fig in figures for t in fig["data"])
+    band_counts = [m.value for m in at.tabs[1].markdown if 'class="risk-band"' in m.value]
+    assert len(band_counts) == 4
+    for band, colour in palette.items():
+        assert any(band in label and f"background:{colour}" in label for label in band_counts)
 
 
 def test_real_events_work_without_live_data():

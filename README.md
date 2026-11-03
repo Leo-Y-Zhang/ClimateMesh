@@ -468,7 +468,7 @@ retrieval times, licences and attributions remain in each fixture.
 ## Screenshots
 
 Captured from this exact tree in **demo / judge mode** (flood scenario unless
-stated). Every panel self-labels its data source — here **🎬 Digital Twin
+stated). Every panel self-labels its data source — here **Digital Twin
 (Demo)** — so nothing is passed off as a real measurement. The full set,
 including the terminal evidence, is in [`docs/screenshots/`](docs/screenshots/).
 
@@ -497,9 +497,9 @@ The dashboard's 8 tabs are all screenshot-worthy — see
 **Live Map** (risk-coloured London nodes), **Network Overview** (KPIs + charts),
 **Node Detail** (per-node readings, source/quality badges, risk breakdown), **AI
 Explainability**, **Evidence & Validation**, **Hardware Readiness**, **Competition
-Pitch**, and **Real events**. Every panel carries a provenance badge — **📡 Physical Sensor**, **🌐 Live
-API**, **🎬 Digital Twin (Demo)**, **💻 Offline Simulation** or **Recorded (archive)** — plus a quality
-badge (✅ ok · ≈ estimated · 🕒 stale · ⚠️ missing), so each shot self-labels its
+Pitch**, and **Real events**. Every panel carries a small bordered text badge for provenance — **Physical Sensor**, **Live
+API**, **Digital Twin (Demo)**, **Offline Simulation** or **Recorded (archive)** — plus a quality
+badge (ok · estimated · stale · missing), so each shot self-labels its
 data source. Two terminal screenshots round out the evidence:
 
 - `python scripts/judge_validate.py` → the compact PASS/FAIL validation table.
@@ -516,9 +516,9 @@ evidence export:
 
 ```mermaid
 flowchart TD
-    HW["📡 Physical Sensor<br/>(Vernier GDX-WTHR)"]
-    API["🌐 Live API<br/>(Open-Meteo)"]
-    DT["🎬 Digital Twin / Demo<br/>+ 💻 Offline Simulation"]
+    HW["Physical Sensor<br/>(Vernier GDX-WTHR)"]
+    API["Live API<br/>(Open-Meteo)"]
+    DT["Digital Twin (Demo)<br/>+ Offline Simulation"]
 
     HW --> CR["Canonical reading<br/>(one fixed shape + source + quality_flag)"]
     API --> CR

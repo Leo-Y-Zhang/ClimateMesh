@@ -35,6 +35,7 @@ from dashboard.badges import (
     effective_source_from_readings, quality_badge_html, source_badge_html,
     source_label, sources_legend_html,
 )
+from dashboard.theme import ACCENT, band_html, configure_charts, dashboard_css
 from data.database import (
     get_alerts, get_latest_readings_per_node, get_latest_run_meta,
     get_node_history, get_risk_scores, init_db,
@@ -44,10 +45,14 @@ from simulation.scenarios import SCENARIO_INFO, SCENARIOS
 
 DEMO_CONTROL_PATH = Path(__file__).parent.parent / "data" / "demo_control.json"
 
-st.set_page_config(page_title="Climate Mesh", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="Climate Mesh", layout="wide")
+configure_charts()
 init_db()
 
-LEVEL_ICON = {"SAFE": "🟢", "MODERATE": "🟡", "WARNING": "🟠", "CRITICAL": "🔴"}
+# Compact source names for the narrow sidebar table; the full labels are in
+# the badges above the tabs.
+SHORT_SOURCE = {"hardware": "Sensor", "api": "API", "demo": "Twin",
+                "simulation": "Sim", "archive": "Archive"}
 # The two bands that mean somebody should do something.
 ACTING_LEVELS = ("WARNING", "CRITICAL")
 # Shown for a node whose reading has arrived but whose risk row has not.
@@ -129,10 +134,9 @@ def _act_now(merged: pd.DataFrame, alerts: list[dict]) -> None:
     # 40 rows, so a storm elsewhere used to push this node's sensor-check out of
     # the window and the panel fell back to the hazard it had just damped.
     hazard = alert_type_for(top)
-    icon = LEVEL_ICON.get(top["level"], "⚪")
-    box = panel.error if top["level"] == "CRITICAL" else panel.warning
-    box(f"{icon}  **Act now — {_node_name(node_id)} · "
-        f"{score_text(top['score'])} {top['level']} · {hazard}**")
+    panel.markdown(
+        f"**Act now — {_node_name(node_id)} · {score_text(top['score'])}** "
+        f"{band_html(top['level'], colours)} · {hazard}", unsafe_allow_html=True)
     if top.get("explanation"):
         panel.markdown(f"**Why:** {top['explanation']}")
     note = _corroboration_line(top)
@@ -218,7 +222,7 @@ configured_source = run_meta.get("source", "simulation")
 active_scenario = _active_scenario()
 
 # --- Header + mode banner -------------------------------------------------
-st.title("🌍 Climate Mesh")
+st.title("Climate Mesh")
 st.caption("Decentralised climate monitoring & AI-powered early-warning mesh — Greater London")
 
 banner = st.container()
@@ -250,20 +254,15 @@ with banner:
             else:
                 st.caption(_line)
     if sources_present:
-        st.markdown(
-            "**Data source(s) in view:** " + sources_legend_html(sources_present),
-            unsafe_allow_html=True)
         quality_present = (sorted(readings_df["quality_flag"].unique())
                            if not readings_df.empty else [])
-        if quality_present:
-            st.markdown(
-                "**Reading quality in view:** "
-                + "".join(quality_badge_html(q) for q in quality_present),
-                unsafe_allow_html=True)
-        st.caption("📡 Physical Sensor = real hardware · 🌐 Live API = Open-Meteo · "
-                   "🎬 Digital Twin (Demo) = deterministic demo · 💻 Offline Simulation "
-                   "= generated · 🗃️ Recorded (archive) = past data. "
-                   "Quality: ✅ ok · ≈ estimated/proxy · 🕒 stale · ⚠️ missing.")
+        st.markdown(
+            "**Sources:** " + sources_legend_html(sources_present)
+            + " · **Quality:** " + "".join(quality_badge_html(q) for q in quality_present),
+            unsafe_allow_html=True)
+        st.caption("Sources distinguish physical readings, live API data, deterministic "
+                   "demo data, generated simulation and recorded archives. "
+                   "Quality: ok, estimated (including proxies), stale or missing.")
 
 if not merged.empty:
     components.html(read_aloud_html(spoken_summary(merged.to_dict("records"))), height=70)
@@ -299,19 +298,20 @@ with st.sidebar:
     if not risks_df.empty:
         _src_by_node = (dict(zip(readings_df["node_id"], readings_df["source"]))
                         if not readings_df.empty else {})
-        for _, row in risks_df.iterrows():
-            icon = LEVEL_ICON.get(row["level"], "⚪")
-            badge = source_badge_html(_src_by_node.get(row["node_id"], "simulation"))
-            # The band word is deliberately redundant with the coloured dot:
-            # red and green are exactly the pair a red-green colour-blind
-            # reader cannot separate, and "62/100" on its own does not say
-            # whether 62 is fine or not.
-            st.markdown(
-                f"{icon} **{_node_name(row['node_id'])}** — "
-                f"{score_text(row['score'])} · {row['level']}<br>"
-                f"<span style='font-size:0.75rem;color:#8a94a6'>{row['node_id']}</span>"
-                f" {badge}",
-                unsafe_allow_html=True)
+        node_table = pd.DataFrame([
+            {"Node": _node_name(row["node_id"]),
+             "Score": int(float(row["score"])), "Band": row["level"],
+             "Source": SHORT_SOURCE.get(_src_by_node.get(row["node_id"], "simulation"),
+                                        "Unknown")}
+            for _, row in _by_risk(risks_df).iterrows()
+        ])
+        st.dataframe(node_table, hide_index=True, use_container_width=True,
+                     height=35 * (len(node_table) + 1) + 3,
+                     column_config={
+                         "Score": st.column_config.NumberColumn("Score", format="%d"),
+                     })
+        st.caption("Source: Sensor = physical sensor, API = live API, Twin = digital "
+                   "twin (demo), Sim = offline simulation, Archive = recorded data.")
     else:
         st.info("Waiting for data…")
     st.divider()
@@ -328,19 +328,12 @@ with st.sidebar:
     refresh = st.checkbox("Auto-refresh (2s)", value=True, key="auto_refresh")
     st.caption("Climate Mesh · honest by design")
 
-if large_text:
-    st.markdown("""<style>
-        html { font-size: 120%; }
-        [data-testid="stSidebar"] p, [data-testid="stSidebar"] label,
-        [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {
-            font-size: 1rem;
-        }
-    </style>""", unsafe_allow_html=True)
+st.markdown(dashboard_css(large_text), unsafe_allow_html=True)
 
 # --- Tabs -----------------------------------------------------------------
 tabs = st.tabs([
-    "🗺️ Live Map", "📊 Network Overview", "🔬 Node Detail", "🤖 AI Explainability",
-    "🧾 Evidence & Validation", "🔌 Hardware Readiness", "🏆 Competition Pitch",
+    "Live Map", "Network Overview", "Node Detail", "AI Explainability",
+    "Evidence & Validation", "Hardware Readiness", "Competition Pitch",
     "Real events",
 ])
 
@@ -359,7 +352,7 @@ with tabs[0]:
         # WebGL map is drawn fresh instead of patched in place (an in-place
         # update after a scenario switch can leave the map canvas blank).
         st.plotly_chart(_scatter_map(merged, offline=offline_map, colours=colours),
-                        use_container_width=True,
+                        use_container_width=True, theme=None,
                         key=f"live-map-{active_scenario}-{'offline' if offline_map else 'tiles'}")
         palette_key = ("blue SAFE, yellow MODERATE, vermilion WARNING, black CRITICAL"
                        if cb_safe else "green safe → red critical")
@@ -380,7 +373,8 @@ with tabs[1]:
         active_alerts = int(risks_df["level"].isin(["WARNING", "CRITICAL"]).sum())
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Average risk", f"{avg_risk:.1f}/100")
-        m2.metric("Highest-risk node", highest["node_id"], f"{highest['score']:.0f}/100")
+        m2.metric(f"Highest-risk node · {highest['score']:.0f}/100",
+                  _node_name(highest["node_id"]))
         m3.metric("Active alerts", active_alerts)
         m4.metric("Avg temp / AQI", f"{readings_df['temperature'].mean():.1f}°C / "
                                     f"{readings_df['air_quality'].mean():.0f}")
@@ -391,7 +385,13 @@ with tabs[1]:
                               for q in sorted(readings_df["quality_flag"].unique())),
                     unsafe_allow_html=True)
 
-        cc1, cc2 = st.columns(2)
+        counts = risks_df["level"].value_counts().reindex(list(colours), fill_value=0)
+        for column, band in zip(st.columns(4), colours):
+            with column:
+                st.markdown(band_html(band, colours), unsafe_allow_html=True)
+                st.metric(f"{band} nodes", int(counts[band]), label_visibility="collapsed")
+
+        cc1, cc2 = st.columns([2, 1])
         with cc1:
             st.subheader("Risk by node")
             # Place names, as on the map and in the sidebar, and one colour per
@@ -401,7 +401,7 @@ with tabs[1]:
             bar = px.bar(by_node, x="score", y="node", orientation="h", color="level",
                          color_discrete_map=colours,
                          category_orders={"level": list(colours)[::-1]},
-                         labels={"node": "", "score": "risk score (0–100)", "level": "band"})
+                         labels={"node": "", "score": "Risk score (0–100)", "level": "Band"})
             bar.update_yaxes(categoryorder="array", categoryarray=list(by_node["node"]))
             bar.update_xaxes(range=[0, 100])
             bar.add_vline(x=60, line_dash="dash", line_color=colours["WARNING"],
@@ -412,36 +412,31 @@ with tabs[1]:
                                           font=dict(size=10, color=colours["CRITICAL"])))
             # the two threshold labels sit on separate rows: 60 and 80 are too close for one
             bar.update_layout(height=470, margin=dict(t=44, b=10))
-            st.plotly_chart(bar, use_container_width=True)
+            st.plotly_chart(bar, use_container_width=True, theme=None)
         with cc2:
-            st.subheader("Risk distribution")
-            counts = risks_df["level"].value_counts().reindex(
-                ["SAFE", "MODERATE", "WARNING", "CRITICAL"], fill_value=0)
-            pie = px.pie(values=counts.values, names=counts.index,
-                         color=counts.index,
-                         color_discrete_map=colours)
-            pie.update_layout(height=300, margin=dict(t=10, b=10))
-            st.plotly_chart(pie, use_container_width=True)
             st.subheader("Weather / AQI summary")
-            s1, s2, s3 = st.columns(3)
-            s1.metric("Humidity", f"{readings_df['humidity'].mean():.0f}%")
-            s2.metric("Wind", f"{readings_df['wind_speed'].mean():.1f} m/s")
-            s3.metric("Pressure", f"{readings_df['barometric_pressure'].mean():.0f} hPa")
+            st.metric("Humidity", f"{readings_df['humidity'].mean():.0f}%")
+            st.metric("Wind", f"{readings_df['wind_speed'].mean():.1f} m/s")
+            st.metric("Pressure", f"{readings_df['barometric_pressure'].mean():.0f} hPa")
 
         st.subheader("Recent alerts")
         if alerts:
-            st.caption("Each alert opens to the action playbook the engine "
-                       "attached to it.")
-            for a in alerts[:12]:
-                icon = "🔴" if a["severity"] == "critical" else "🟠"
-                ts = _local_hms(a["timestamp"])
-                st.markdown(f"{icon} **[{ts}]** {_node_name(a['node_id'])} — "
-                            f"{a['message']}")
-                steps = playbook_for(a["alert_type"])
-                if steps:
-                    with st.expander(f"What to do about this {a['alert_type']} alert"):
+            recent = alerts[:12]
+            st.dataframe(pd.DataFrame([
+                {"Time": _local_hms(a["timestamp"]), "Node": _node_name(a["node_id"]),
+                 "Severity": a["severity"].upper(), "Type": a["alert_type"],
+                 "Message": a["message"]} for a in recent
+            ]), hide_index=True, use_container_width=True,
+                column_config={"Message": st.column_config.TextColumn(width="large")})
+            st.caption("Action playbooks are grouped by alert type.")
+            for alert_type in dict.fromkeys(a["alert_type"] for a in recent):
+                steps = playbook_for(alert_type)
+                with st.expander(f"What to do about this {alert_type} alert"):
+                    if steps:
                         for i, step in enumerate(steps, 1):
                             st.markdown(f"{i}. {step}")
+                    else:
+                        st.write("No playbook is available for this alert type.")
         else:
             st.success("No active alerts — all nodes within safe parameters.")
     else:
@@ -481,7 +476,8 @@ with tabs[2]:
 
         if not rrow.empty:
             r = rrow.iloc[0]
-            st.metric("Risk score", score_text(r["score"]), r["level"], delta_color="off")
+            st.metric("Risk score", score_text(r["score"]))
+            st.markdown(band_html(r["level"], colours), unsafe_allow_html=True)
             st.markdown(f"**Why:** {r['explanation']}")
             _note = _corroboration_line(r)
             if _note:
@@ -500,7 +496,7 @@ with tabs[2]:
                              range_y=[0, 100], title="Risk breakdown by factor (0–100)",
                              labels={"x": "Factor", "y": "Sub-score (0–100)"})
             sub_fig.update_layout(height=280, margin=dict(t=40, b=10))
-            st.plotly_chart(sub_fig, use_container_width=True)
+            st.plotly_chart(sub_fig, use_container_width=True, theme=None)
 
         history = get_node_history(node_id, minutes=10)
         if len(history) > 1:
@@ -508,11 +504,16 @@ with tabs[2]:
             hist["timestamp"] = (pd.to_datetime(hist["timestamp"], utc=True)
                                  .dt.tz_convert(datetime.now().astimezone().tzinfo))
             st.subheader("Recent history (last 10 min, local time)")
-            for ch, unit in [("temperature", "°C"), ("water_level", "m"),
-                             ("air_quality", "AQI"), ("barometric_pressure", "hPa")]:
-                line = px.line(hist, x="timestamp", y=ch, title=f"{ch.replace('_', ' ').title()} ({unit})")
+            channels = [("temperature", "°C"), ("water_level", "m"),
+                        ("air_quality", "AQI"), ("barometric_pressure", "hPa")]
+            for i, (ch, unit) in enumerate(channels):
+                if i % 2 == 0:
+                    history_columns = st.columns(2)
+                title = ch.replace('_', ' ').capitalize()
+                line = px.line(hist, x="timestamp", y=ch, title=f"{title} ({unit})",
+                               labels={"timestamp": "Local time", ch: unit})
                 line.update_layout(height=200, margin=dict(t=30, b=10))
-                st.plotly_chart(line, use_container_width=True)
+                history_columns[i % 2].plotly_chart(line, use_container_width=True, theme=None)
         else:
             st.caption("History accumulates as the engine runs.")
     else:
@@ -544,13 +545,13 @@ with tabs[3]:
             for _, row in anomalous.head(12).iterrows():
                 tags = ", ".join(row["top_factors"]) if isinstance(row["top_factors"], list) else ""
                 mesh = {
-                    "corroborated": f" · 🔗 corroborated by {row.get('correlated_count', 0)}"
+                    "corroborated": f" · confirmed by {row.get('correlated_count', 0)}"
                                     f" of {row.get('mesh_degree', 0)} neighbours",
-                    "partial": f" · ◐ {row.get('correlated_count', 0)} of"
+                    "partial": f" · partly corroborated: {row.get('correlated_count', 0)} of"
                                f" {row.get('mesh_degree', 0)} neighbours agree",
-                    "uncorroborated": f" · ⚠ uncorroborated — no neighbour of"
+                    "uncorroborated": f" · uncorroborated: no neighbour of"
                                       f" {row.get('mesh_degree', 0)} agrees (check the sensor)",
-                    "unavailable": " · ○ cannot be corroborated (fewer than two neighbours in range)",
+                    "unavailable": " · cannot be corroborated (fewer than two neighbours in range)",
                 }.get(row.get("corroboration"), " · isolated")
                 st.markdown(
                     f"**{row['node_id']}** — anomaly {row['anomaly_score']:.2f} · "
@@ -562,9 +563,9 @@ with tabs[3]:
 
         st.subheader("Anomaly score distribution")
         hist = px.histogram(merged, x="anomaly_score", nbins=20,
-                            color_discrete_sequence=["#6c5ce7"])
+                            color_discrete_sequence=[ACCENT])
         hist.update_layout(height=280, margin=dict(t=10, b=10))
-        st.plotly_chart(hist, use_container_width=True)
+        st.plotly_chart(hist, use_container_width=True, theme=None)
     else:
         st.info("Waiting for risk data…")
 
@@ -606,7 +607,7 @@ with tabs[5]:
     st.markdown("**Current node provenance:** " + source_badge_html(_effective_source),
                 unsafe_allow_html=True)
     if _hardware_reading_present:
-        st.success("📡 A live reading with `source=\"hardware\"` is present — a physical "
+        st.success("A live reading with `source=\"hardware\"` is present — a physical "
                    "device has actually opened and returned data.")
     elif status["any_physical_sensor_detected"]:
         st.info("Driver library present — **no device read yet.** The Vernier/ADC driver "
@@ -620,11 +621,12 @@ with tabs[5]:
     # build, kernel, libc) is of no use to a judge and is host detail the
     # dashboard has no reason to publish. looks_like_raspberry_pi answers the
     # only question this panel actually asks.
-    st.json({
-        "looks_like_raspberry_pi": status["looks_like_raspberry_pi"],
-        "vernier_weather_library": status["gdx_weather_available"],
-        "adc_air_quality_library": status["adc_air_quality_available"],
-    })
+    st.dataframe(pd.DataFrame([
+        {"Check": label, "Result": "Yes" if status[key] else "No"}
+        for label, key in [("Looks like a Raspberry Pi", "looks_like_raspberry_pi"),
+                           ("Vernier weather library", "gdx_weather_available"),
+                           ("ADC air quality library", "adc_air_quality_available")]
+    ]), hide_index=True, use_container_width=True)
     st.markdown(
         "### Vernier adapter pathway (implemented, awaiting a device)\n"
         "- `sensors/vernier_adapter.py` already implements the hardware path. When a "

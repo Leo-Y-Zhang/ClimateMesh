@@ -136,7 +136,7 @@ body {{ font: 16px "Source Sans Pro", "Source Sans 3", system-ui, sans-serif; ma
 /* matches Streamlit's secondary buttons so the control looks part of the page */
 button {{ font: inherit; padding: 0.4rem 0.9rem; margin-right: 0.4rem; cursor: pointer; color: inherit;
           background: #fff; border: 1px solid rgba(49, 51, 63, 0.2); border-radius: 0.5rem; }}
-button:hover {{ border-color: #ff4b4b; color: #ff4b4b; }}
+button:hover {{ border-color: #2b5a7a; color: #2b5a7a; }}
 button:disabled {{ cursor: not-allowed; opacity: 0.5; }}
 button:focus-visible {{ outline: 3px solid #0072B2; outline-offset: 2px; }}
 #status {{ margin-left: 0.4rem; }}

@@ -126,12 +126,10 @@ def test_an_uncorroborated_node_sends_the_reader_to_the_sensor_not_the_river():
 def test_the_band_word_appears_beside_every_score_in_the_sidebar():
     _seed("flood")
     at = _render()
-    scores = [m.value for m in at.markdown
-              if "/100" in str(m.value) and "<span" in str(m.value)]
-    assert scores, "the sidebar node list did not render"
-    for line in scores:
-        assert any(band in line
-                   for band in ("SAFE", "MODERATE", "WARNING", "CRITICAL")), line
+    nodes = at.sidebar.dataframe[0].value
+    assert len(nodes) == 20, "the sidebar node table did not render"
+    assert nodes["Score"].notna().all()
+    assert set(nodes["Band"]) <= {"SAFE", "MODERATE", "WARNING", "CRITICAL"}
 
 
 def test_the_header_names_the_highest_risk_node_and_its_band():
